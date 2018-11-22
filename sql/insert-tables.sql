@@ -5,7 +5,7 @@ insert into user(name,nickname,classyear,username,password,sprefs) values ("Rian
 insert into regulars(username,password,sprefs) values("ltso","pass","all");
 insert into admins(username,password) values ("rtang","pass"), ("tdeshong","pass");
 insert into industry(pid,iname) values ("ltso","Health Professions"), ("tdeshong","Technology and Engineering");
-insert into events(ename,city,state,country,description,edate) values("Millyfest","Wellesley","MA","US","tourney","2018-11-12");
+insert into events(ename,city,state,country,description,edate,approved) values("Millyfest","Wellesley","MA","US","tourney","2018-11-12",1);
 insert into messages(sender,receiver,message) values ("ltso","tdeshong","hi"), ("ltso","tdeshong","bye"), ("tdeshong","rtang","cool");
 insert into team(tname,`type`,nearestcity,state,country,pid) values ("Brute Squad","club","Boston","MA","US","tdeshong"), ("Nightlock","league","SF","CA","US","ltso");
 insert into location(pid,city,nearestcity,state,country) values ("ltso","NYC","NYC","NY","US");

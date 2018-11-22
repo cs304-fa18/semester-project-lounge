@@ -8,8 +8,6 @@ drop table if exists messages;
 drop table if exists team;
 drop table if exists location;
 drop table if exists industry;
-drop table if exists admins;
-drop table if exists regulars;
 drop table if exists user;
     
 create table user(
@@ -20,30 +18,12 @@ create table user(
     classyear varchar(4),
     username varchar(20) not NULL,
     password varchar(30) not NULL,
+    user_type enum("regular","admin")
     sprefs enum("all", "class", "overlap", "admin"),
     primary key(username)
     )
     ENGINE = InnoDB;
     
-create table admins(
-    username varchar(20) not NULL,
-    password varchar(30) not NULL,
-    primary key(username),
-    foreign key(username) references user(username)
-    on delete restrict on update cascade
-    )
-    ENGINE = InnoDB;
-
-create table regulars(
-    username varchar(20) not NULL,
-    password varchar(30) not NULL,
-    sprefs enum("all", "class", "overlap", "admin"),
-    primary key(username),
-    foreign key(username) references user(username)
-    on delete restrict on update cascade
-    )
-    ENGINE = InnoDB;
-
 create table location(
     pid varchar(20) not NULL,
     city varchar(50),
@@ -99,6 +79,7 @@ create table events(
     country varchar(60),
     description varchar(140),
     edate date,
+    approved bit,
     primary key(ename, edate)
     )
     ENGINE = InnoDB;
