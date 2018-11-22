@@ -4,17 +4,28 @@
 
 <title>Events</title>
 <body>
- 
+    
+<!--display all flashed messages-->
+{% with messages = get_flashed_messages() %}
+    {% if messages %}
+        <div id="messages">
+        {% for message in messages %}
+            <p>{{ message }}</p>
+        {% endfor %}
+        </div>
+    {% endif %}
+{% endwith %}
+
 <form action="/submitEvent/" method="POST">
     <fieldset>
         <legend>Event Data</legend>
         <table>
-            <tr><td><label for="name" accesskey="n">(n) Event Name:</label></td><td><input type="text" name="name" id="name"></td></tr>
-            <tr><td><label for="city" accesskey="c">(c) Event City:</label></td><td><input type="text" name="city" id="city"></td></tr>
-            <tr><td><label for="state" accesskey="s">(s) Event State:</label></td><td><input type="text" name="state" id="state"></td></tr>
-            <tr><td><label for="country" accesskey="o">(o) Event Country:</label></td><td><input type="text" name="country" id="country"></td></tr>
-            <tr><td><label for="desc" accesskey="d">(d) Event Description:</label></td><td><input type="text" name="desc" id="desc"></td></tr>
-            <tr><td><label for="date" accesskey="a">(a) Event Date:</label></td><td><input type="text" name="date" id="date"></td></tr>
+            <tr><td><label for="name" accesskey="n"> Event Name:</label></td><td><input type="text" name="name" id="name"></td></tr>
+            <tr><td><label for="city" accesskey="c"> Event City:</label></td><td><input type="text" name="city" id="city"></td></tr>
+            <tr><td><label for="state" accesskey="s"> Event State:</label></td><td><input type="text" name="state" id="state"></td></tr>
+            <tr><td><label for="country" accesskey="o"> Event Country:</label></td><td><input type="text" name="country" id="country"></td></tr>
+            <tr><td><label for="desc" accesskey="d"> Event Description:</label></td><td><input type="text" name="desc" id="desc"></td></tr>
+            <tr><td><label for="date" accesskey="a"> Event Date:</label></td><td><input type="text" name="date" id="date"></td></tr>
         </table>
     </fieldset>
     <p>
@@ -31,9 +42,8 @@
             <th>Country</th>
             <th>Description</th>
             <th>Date</th>
-    </tr>
         </tr>
-        
+        </tr>
         {% for event in events %}
         <tr class = "event" >
             <td class="name">{{event.ename}}</td>
@@ -42,8 +52,16 @@
             <td class="country">{{event.country}}</td>
             <td class="description">{{event.description}}</td>
             <td class="date">{{event.edate}}</td>
+            {% if approve %}
+            <td><form method="post" action="/approveEvent/">
+                <input type="hidden" name="name" value="{{event.ename}}">
+                <input type="hidden" name="date" value="{{event.edate}}">
+                <input type="submit" value="Approve this!">
+            </form></td>
+            {% endif %}
         </tr>
         {% endfor %}
+        
     </table>
  
 </body>

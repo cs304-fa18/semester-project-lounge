@@ -1,9 +1,7 @@
 use c9;
 
-insert into user(name,nickname,classyear,username,password,sprefs) values ("Riann","Nut",2019,"rtang","pass","all"),
-("Lauren","ebae",2020,"ltso","pass","all"), ("Tam","Briese",2019,"tdeshong","pass","all");
-insert into regulars(username,password,sprefs) values("ltso","pass","all");
-insert into admins(username,password) values ("rtang","pass"), ("tdeshong","pass");
+insert into user(name,nickname,classyear,username,password,user_type,sprefs) values ("Riann","Nut",2019,"rtang","pass","admin","all"),
+("Lauren","ebae",2020,"ltso","pass","admin","all"), ("Tam","Briese",2019,"tdeshong","pass","admin","all");
 insert into industry(pid,iname) values ("ltso","Health Professions"), ("tdeshong","Technology and Engineering");
 insert into events(ename,city,state,country,description,edate,approved) values("Millyfest","Wellesley","MA","US","tourney","2018-11-12",1);
 insert into messages(sender,receiver,message) values ("ltso","tdeshong","hi"), ("ltso","tdeshong","bye"), ("tdeshong","rtang","cool");

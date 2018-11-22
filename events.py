@@ -21,9 +21,12 @@ def getEvents(conn, approved):
     
 def submitEvent(conn, name, city, state, country, desc, date):
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
-    print(name, city, state, country, desc, date)
     curs.execute('''insert into events(ename, city, state, country, description, edate, approved) 
                     values(%s, %s, %s, %s, %s, %s, 0)''', (name, city, state, country, desc, date,))
+                    
+def approveEvent(conn, name, date):
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''update events set approved = 1 where ename = %s and edate = %s''', (name, date,))
 
 # ================================================================
 
