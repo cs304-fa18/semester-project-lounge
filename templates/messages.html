@@ -7,66 +7,58 @@
     <meta name=description content="">
     <meta name=keywords content="">    
     <title>Messages!</title>
-    <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">
-    <link rel='stylesheet' href="{{url_for('static',filename='styling.css')}}">
+    <!--<link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">-->
+    <!--<link rel='stylesheet' href="{{url_for('static',filename='styling.css')}}">-->
   </head>
   <body>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
     <h1 class="title">Messaging!</h1>
 
     <!--Display any flashed messages-->
-    {% with messages = get_flashed_messages() %}
-        {% if messages %}
-            <div id="messages">
-            {% for fmsg in messages %}
-                <p>{{fmsg}}</p>
-            {% endfor %}
-            </div>
-        {% endif %}
-    {% endwith %}
+    <!--{% with messages = get_flashed_messages() %}-->
+    <!--    {% if messages %}-->
+    <!--        <div id="messages">-->
+    <!--        {% for fmsg in messages %}-->
+    <!--            <p>{{fmsg}}</p>-->
+    <!--        {% endfor %}-->
+    <!--        </div>-->
+    <!--    {% endif %}-->
+    <!--{% endwith %}-->
     
-    <div id="allM">
+    <!--Section for displaying names of people with whom user has a message history-->
+    <div id="allM"> 
         <table id="messagesT" style="width:10%">
           <tr>
             <th>Name</th>
           </tr>
-          {% for key in mKeys %}
-            <tr class = 'tt' data-tt= {{key}}>
-                <td><button class="chooseMsgButton" type="button">{{ msgs[key] }}</button></td>
-          <!--{% for prev in mPrev %}-->
-          <!--      <td class = "lastM">{{prev['message']}}</td>-->
-          <!--{% endfor %}-->
+          {% for n in num %}
+            <tr class = 'tt' data-tt= {{mKeys[n]}}>
+                <td><button class="chooseMsgButton" type="button">{{ msgs[mKeys[n]] }}: {{mPrev[n]['message']}}</button></td>
             </tr>
           {% endfor %}
         </table>
     </div>
     
+    <!--Section for showing messages one person and sending them messages-->
     <div id="newM">
         <subdiv id="oneM">
           <p>Choose a message to start</p>
         </subdiv>
         <form id=newMForm action="/sendMsg/" method="POST">
             <input type="text" name="message" placeholder="Type a message">
-            <span id="tt"></span>
+            <span id="tt"></span> 
         </form>
     </div>
 
     <script>
-      // function updateMessages(person) {
-      //   $("#oneM").empty();
-      //   var url = "{{url_for('messagePerson')}}";
-      //   $.get(url, {person:person}, function(data){
-      //     for (i=0;i<data.length;i++){
-      //       $("#oneM").append("<p>" + data[i]['sender'] + ": " + data[i]['message'] + "</p>");
-      //     }
-      //   });
-      // }
-      
       $("#messagesT").on("click", ".chooseMsgButton", function(event) {
         var $dt = $(this).closest("[data-tt]");
         var person = $dt.data('tt');
+        
+        // Hidden input with name of the receiver
         $("#newM  #tt").html('<input type="hidden" id="receiver" name="receiver" value=' + person + '>')
         
+        // Get messages history with selected person
         $("#oneM").empty();
         var url = "{{url_for('messagePerson')}}";
         $.get(url, {person:person}, function(data){
@@ -76,6 +68,7 @@
         });
       })
 
+      // Use Ajax to send message and show new message in message history
       $("#newMForm").on("submit", function(event) {
         event.preventDefault(); // Keep form from submitting normally
         var url = "{{url_for('sendMsgAjax')}}";
@@ -84,7 +77,7 @@
         $.post(url, {receiver: receiver, message:message}, function(data){
           $("#oneM").append("<p>" + data + ": " + message + "</p>");
         }); 
-        $("#newMForm")[0].reset();
+        $("#newMForm")[0].reset(); //Clear the text field after message sends
       })
     </script>
   
