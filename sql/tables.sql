@@ -64,6 +64,7 @@ create table messages(
     sender varchar(20) not NULL,
     receiver varchar(20) not NULL,
     message varchar(140),
+    read bit not NULL default 0,
     primary key(mid, sender, receiver),
     foreign key (sender) references user(username)
     on delete restrict on update cascade,

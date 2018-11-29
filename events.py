@@ -1,4 +1,4 @@
-#!/usr/bin/python2.7
+# Lauren Tso
 
 import sys
 import MySQLdb
