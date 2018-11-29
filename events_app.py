@@ -1,3 +1,4 @@
+# Lauren Tso 
 from flask import (Flask, url_for, flash, render_template, request, redirect, session, jsonify)
 import events
 

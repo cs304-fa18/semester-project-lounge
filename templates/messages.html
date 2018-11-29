@@ -1,0 +1,92 @@
+<!--Riann Tang-->
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name=author content="Riann Tang">
+    <meta name=description content="">
+    <meta name=keywords content="">    
+    <title>Messages!</title>
+    <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">
+    <link rel='stylesheet' href="{{url_for('static',filename='styling.css')}}">
+  </head>
+  <body>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <h1 class="title">Messaging!</h1>
+
+    <!--Display any flashed messages-->
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div id="messages">
+            {% for fmsg in messages %}
+                <p>{{fmsg}}</p>
+            {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+    
+    <div id="allM">
+        <table id="messagesT" style="width:10%">
+          <tr>
+            <th>Name</th>
+          </tr>
+          {% for key in mKeys %}
+            <tr class = 'tt' data-tt= {{key}}>
+                <td><button class="chooseMsgButton" type="button">{{ msgs[key] }}</button></td>
+          <!--{% for prev in mPrev %}-->
+          <!--      <td class = "lastM">{{prev['message']}}</td>-->
+          <!--{% endfor %}-->
+            </tr>
+          {% endfor %}
+        </table>
+    </div>
+    
+    <div id="newM">
+        <subdiv id="oneM">
+          <p>Choose a message to start</p>
+        </subdiv>
+        <form id=newMForm action="/sendMsg/" method="POST">
+            <input type="text" name="message" placeholder="Type a message">
+            <span id="tt"></span>
+        </form>
+    </div>
+
+    <script>
+      // function updateMessages(person) {
+      //   $("#oneM").empty();
+      //   var url = "{{url_for('messagePerson')}}";
+      //   $.get(url, {person:person}, function(data){
+      //     for (i=0;i<data.length;i++){
+      //       $("#oneM").append("<p>" + data[i]['sender'] + ": " + data[i]['message'] + "</p>");
+      //     }
+      //   });
+      // }
+      
+      $("#messagesT").on("click", ".chooseMsgButton", function(event) {
+        var $dt = $(this).closest("[data-tt]");
+        var person = $dt.data('tt');
+        $("#newM  #tt").html('<input type="hidden" id="receiver" name="receiver" value=' + person + '>')
+        
+        $("#oneM").empty();
+        var url = "{{url_for('messagePerson')}}";
+        $.get(url, {person:person}, function(data){
+          for (i=0;i<data.length;i++){
+            $("#oneM").append("<p>" + data[i]['sender'] + ": " + data[i]['message'] + "</p>");
+          }
+        });
+      })
+
+      $("#newMForm").on("submit", function(event) {
+        event.preventDefault(); // Keep form from submitting normally
+        var url = "{{url_for('sendMsgAjax')}}";
+        var receiver = document.getElementById("newMForm").elements.namedItem("receiver").value;
+        var message = document.getElementById("newMForm").elements.namedItem("message").value;
+        $.post(url, {receiver: receiver, message:message}, function(data){
+          $("#oneM").append("<p>" + data + ": " + message + "</p>");
+        }); 
+        $("#newMForm")[0].reset();
+      })
+    </script>
+  
+  </body>
+</html>
