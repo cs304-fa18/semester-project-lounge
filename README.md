@@ -4,6 +4,6 @@ Lounge is a Whiptail database where current members and alumnae of the Wellesley
 for fundraising, networking, and socializing.
 
 --
-Tamara Deshong
-Riann Tang
-Lauren Tso
+Tamara Deshong  
+Riann Tang  
+Lauren Tso  
