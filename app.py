@@ -8,6 +8,51 @@ app.secret_key = "notverysecret"
 def index():
     return render_template('index.html')
 
+@app.route('/createAccount/', methods=['POST', 'GET'])
+def logins():
+    if request.method == ('GET'):
+        return render_template('userinfo.html')
+    else:
+        email = request.form.get("email")
+        uname = request.form.get("username")
+        pwd1 = request.form.get("password1")
+        pwd2 = request.form.get("password2")
+        name = request.form.get("name")
+        nname = request.form.get("nickname")
+        year = request.form.get("year")
+        phnum =request.form.get("phnum")
+        sprefs = request.form.get("radio")
+
+        if email == "" or "@" not in email:
+            flash("Invalid email address")
+        if pwd1 == "" or pwd == "":
+            flash("One or both of the password fields are incomplete")
+        if pwd1!= pwd:
+            flash("The passwords do not match")
+        if name == "":
+            flash("The name fields is incomplete")
+        if uname =="":
+            flash("The user name incomplete")
+    
+        if not any([email=="",pwd=="", pwd1!= pwd, name == "",uname ==""]):
+            try:
+                login.insert(name, email, uname, pwd, nname, phnum, year, \
+                sprefs)
+            except:
+                flash("username already exist") # username not in database
+    return render_template('userinfo.html')
+
+# Sets the user of the session
+@app.route('/setUID/', methods=['POST'])
+def setUID():
+    uid = request.form.get('uid')
+    
+    if uid == '':
+        session['uid'] = uid
+        return redirect(request.referrer)
+    session['uid'] = uid
+    return redirect(request.referrer)
+    
 @app.route('/approved/')
 def viewApproved():
     conn = events.getConn('c9')
@@ -68,25 +113,17 @@ def approveDeleteEvent():
     conn = events.getConn('c9')
     name = request.form.get('name')
     date = request.form.get('date')
+    
     if request.form.get('submit') == 'Approve!':
         events.approveEvent(conn, name, date)
         flash("Event {} approved".format(name))
         return redirect(url_for('viewApproved'))
+        
     if request.form.get('submit') == 'Delete!':
         print(name, date)
         events.deleteEvent(conn, name, date)
         flash("Event {} deleted".format(name))
         return redirect(url_for('viewSubmitted'))
-
-# Sets the user of the session
-@app.route('/setUID/', methods=['POST'])
-def setUID():
-    uid = request.form.get('uid')
-    if uid == '':
-        session['uid'] = uid
-        return redirect(request.referrer)
-    session['uid'] = uid
-    return redirect(request.referrer)
 
 # Main page for messaging feature    
 @app.route('/messages/')

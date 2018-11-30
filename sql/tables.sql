@@ -64,7 +64,7 @@ create table messages(
     sender varchar(20) not NULL,
     receiver varchar(20) not NULL,
     message varchar(140),
-    read bit not NULL default 0,
+    receipt bit not NULL default 0,
     primary key(mid, sender, receiver),
     foreign key (sender) references user(username)
     on delete restrict on update cascade,
@@ -74,14 +74,17 @@ create table messages(
     ENGINE = InnoDB;
     
 create table events(
-    ename varchar(50),
+    ename varchar(50) not NULL,
     city varchar(50),
     state varchar(2),
     country varchar(60),
     description varchar(140),
-    edate date,
+    edate date not NULL,
     approved bit,
-    primary key(ename, edate)
+    pid varchar(20) not NULL,
+    primary key(ename, edate),
+    foreign key (pid) references user(username)
+    on delete restrict on update cascade
     )
     ENGINE = InnoDB;
     

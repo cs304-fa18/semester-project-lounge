@@ -16,7 +16,10 @@
     {% endif %}
 {% endwith %}
 
+{% block content %}
+
 <h1>Welcome!</h1>
+
 <html>
     <body>
         <p>Log in!
@@ -27,8 +30,15 @@
         
         <p>Check out our pages!
             <a href="/">Home</a>
+            <a href="/createAccount/">Create a profile</a>
             <a href="/approved/">Events</a>
             <a href="/messages/">Messages</a>
         </p>
     </body>
+    
+Lounge is a Whiptail database where current members and alumnae of the Wellesley 
+ultimate frisbee team can more easily connect for fundraising, networking, and 
+socializing.
+
+{% endblock %}
 </html>

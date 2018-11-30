@@ -6,44 +6,42 @@
     <title>User Information</title>
     
 </head>
+
+{% block content %}
+
 <body>
-{% with messages = get_flashed_messages() %}
-    {% if messages %}
-        <div id="messages">
-        {% for message in messages %}
-            <p>{{ message }}</p>
-        {% endfor %}
-        </div>
-    {% endif %}
-{% endwith %}
-    
 <h1>User Information</h1>
-<form method="POST" action="/preferences">
-    Email: <input type="text" id="email" name="email"><br><br>
-    Username: <input type="text" id="username" name="username"><br><br>
-    Password: <input type="text" id="password" name="password"><br><br>
-    Re-enter password: <input type="text" id="password1" name="password1"><br>
-    <br><br>
-    
-    Name: <input type="text" id="name"name="firstname"><br><br>
-    Preferred name/Nickname: <input type="text" id="nname" name="nickname"><br><br>
-    <br>
-    
-    Phone number: <input type="text" id="pnum" name="number"><br><br>
-    Class year: <input type="text" id="year" name="classNum"><br><br>
-    Industry: <input type="text" name="indust"><br><br>
-    Ancestry: <input type="text" name="ancest"><br><br>
-    Current Frisbee team: <input type="text" name="team"><br><br>
-    
-    <h3>Security</h3>
-    <p>Profile viewable to: </p><br>
-      <input type="radio" name="view" value="all"> Everyone<br>
-      <input type="radio" name="view" value="class"> Just whiptails in my class<br>
-      <input type="radio" name="view" value="overlap"> Whiptails with similar info<br>
-      <input type="radio" name="view" value="admin"> Just me<br><br>
-      
-      <p><input type="submit" value="Submit"></p>
+
+<form action="/createAccount/" method="POST">
+    <fieldset>
+        <legend>Enter Information</legend>
+        <table>
+            <tr><td><label for="email"> Email:</label></td><td><input type="text" name="email" id="email"></td></tr>
+            <tr><td><label for="username"> Username:</label></td><td><input type="text" name="username" id="username"></td></tr>
+            <tr><td><label for="password1"> Password:</label></td><td><input type="text" name="password1" id="password1"></td></tr>
+            <tr><td><label for="password2"> Re-enter password:</label></td><td><input type="text" name="password2" id="password2"><br></td></tr>
+            <tr><td><label for="security"> Security preferences:<br>
+                <input type="radio" name="view" value="all"> Everyone<br>
+                <input type="radio" name="view" value="class"> Whiptails in my class<br>
+                <input type="radio" name="view" value="overlap"> Whiptails I went to school with<br>
+                <input type="radio" name="view" value="admin"> Just me<br>
+            </td></tr>
+            <tr><td><label for="name"> Name:</label></td><td><input type="text" name="name" id="name"></td></tr>
+            <tr><td><label for="nickname"> Nickname:</label></td><td><input type="text" name="nickname" id="nickname"></td></tr>
+            <tr><td><label for="phnum"> Phone number:</label></td><td><input type="text" name="phnum" id="phnum"></td></tr>
+            <tr><td><label for="year"> Class year:</label></td><td><input type="text" name="year" id="year"></td></tr>
+            <tr><td><label for="industry"> Industry:</label></td><td><input type="text" name="industry" id="industry"></td></tr>
+            <tr><td><label for="ancestor"> Ancestor:</label></td><td><input type="text" name="ancestor" id="ancestor"></td></tr>
+            <tr><td><label for="team"> Team:</label></td><td><input type="text" name="team" id="team"></td></tr>
+        </table>
+    </fieldset>
+    <p>
+        <input type='submit' value='Create Account'>
+    </p>
 </form>
-    
+
 </body>
+
+{% endblock %}
+
 </html>
