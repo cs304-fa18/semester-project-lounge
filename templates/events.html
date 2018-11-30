@@ -1,21 +1,13 @@
 <!--Lauren Tso-->
 <!doctype html>
 
+{% extends "index-base.html" %}
+{% block content %}
+
 <html lang='en'>
 
 <title>Events</title>
 <body>
-    
-<!--display all flashed messages-->
-{% with messages = get_flashed_messages() %}
-    {% if messages %}
-        <div id="messages">
-        {% for message in messages %}
-            <p>{{ message }}</p>
-        {% endfor %}
-        </div>
-    {% endif %}
-{% endwith %}
 
 <form action="/submitEvent/" method="POST">
     <fieldset>
@@ -68,3 +60,5 @@
  
 </body>
 </html>
+
+{% endblock %}
