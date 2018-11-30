@@ -1,5 +1,5 @@
 from flask import (Flask, url_for, flash, render_template, request, redirect, session, jsonify)
-import events, messages
+import events, messages, login
 
 app = Flask(__name__)
 app.secret_key = "notverysecret"
@@ -25,18 +25,18 @@ def logins():
 
         if email == "" or "@" not in email:
             flash("Invalid email address")
-        if pwd1 == "" or pwd == "":
+        if pwd1 == "" or pwd2 == "":
             flash("One or both of the password fields are incomplete")
-        if pwd1!= pwd:
+        if pwd1!= pwd2:
             flash("The passwords do not match")
         if name == "":
             flash("The name fields is incomplete")
         if uname =="":
             flash("The user name incomplete")
     
-        if not any([email=="",pwd=="", pwd1!= pwd, name == "",uname ==""]):
+        if not any([email=="",pwd1=="", pwd1!= pwd2, name == "",uname ==""]):
             try:
-                login.insert(name, email, uname, pwd, nname, phnum, year, \
+                login.insert(name, email, uname, pwd1, nname, phnum, year, \
                 sprefs)
             except:
                 flash("username already exist") # username not in database
