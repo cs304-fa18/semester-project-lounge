@@ -7,7 +7,7 @@ app.secret_key = "whiptails"
 numRequest=0
 
 @app.route('/preferences', methods=['POST', 'GET'])
-def login():
+def logins():
     if request.method == ('GET'):
         return render_template('userinfo.html')
     else:

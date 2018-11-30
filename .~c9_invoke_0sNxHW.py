@@ -72,12 +72,12 @@ def approveDeleteEvent():
         events.approveEvent(conn, name, date)
         flash("Event {} approved".format(name))
         return redirect(url_for('viewApproved'))
-    if request.form.get('submit') == 'Delete!':
-        print(name, date)
+    if request.form.get('submit') == 'Delete this!':
+        flash("Event {} deleted".format(name))
         events.deleteEvent(conn, name, date)
         flash("Event {} deleted".format(name))
         return redirect(url_for('viewSubmitted'))
-
+    
 # Sets the user of the session
 @app.route('/setUID/', methods=['POST'])
 def setUID():

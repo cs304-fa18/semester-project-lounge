@@ -34,6 +34,10 @@ def approveEvent(conn, name, date):
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
     curs.execute('''update events set approved = 1 where ename = %s and edate = %s''', (name, date,))
 
+def deleteEvent(conn, name, date):
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''delete from events where ename = %s and edate = %s''', (name, date,))
+
 # ================================================================
 
 if __name__ == '__main__':

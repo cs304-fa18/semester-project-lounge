@@ -1,3 +1,4 @@
+<!--Lauren Tso-->
 <!doctype html>
 
 <html lang='en'>
@@ -53,10 +54,11 @@
             <td class="description">{{event.description}}</td>
             <td class="date">{{event.edate}}</td>
             {% if approve %}
-            <td><form method="post" action="/approveEvent/">
+            <td><form method="post" action="/approveDeleteEvent/">
                 <input type="hidden" name="name" value="{{event.ename}}">
                 <input type="hidden" name="date" value="{{event.edate}}">
-                <input type="submit" value="Approve this!">
+                <input type="submit" name="submit" value="Approve!">
+                <input type="submit" name="submit" value="Delete!">
             </form></td>
             {% endif %}
         </tr>
