@@ -7,9 +7,18 @@
     
 </head>
 <body>
-    {% if msg %}
-    <p>{{msg}}</p>
+    <!--{% if msg %}-->
+    <!--<p>{{msg}}</p>-->
+    <!--{% endif %}-->
+{% with messages = get_flashed_messages() %}
+    {% if messages %}
+        <div id="messages">
+        {% for message in messages %}
+            <p>{{ message }}</p>
+        {% endfor %}
+        </div>
     {% endif %}
+{% endwith %}
     
 <h1>User Information</h1>
 <form method="POST" action="/preferences">
