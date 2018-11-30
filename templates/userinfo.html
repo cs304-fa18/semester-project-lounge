@@ -7,9 +7,6 @@
     
 </head>
 <body>
-    <!--{% if msg %}-->
-    <!--<p>{{msg}}</p>-->
-    <!--{% endif %}-->
 {% with messages = get_flashed_messages() %}
     {% if messages %}
         <div id="messages">
@@ -39,7 +36,7 @@
     Current Frisbee team: <input type="text" name="team"><br><br>
     
     <h3>Security</h3>
-    <p>Profile viewable to: </p><br><br>
+    <p>Profile viewable to: </p><br>
       <input type="radio" name="view" value="all"> Everyone<br>
       <input type="radio" name="view" value="class"> Just whiptails in my class<br>
       <input type="radio" name="view" value="overlap"> Whiptails with similar info<br>
