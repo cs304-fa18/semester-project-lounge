@@ -6,17 +6,10 @@
     <title>User Information</title>
     
 </head>
+
+{% block content %}
+
 <body>
-{% with messages = get_flashed_messages() %}
-    {% if messages %}
-        <div id="messages">
-        {% for message in messages %}
-            <p>{{ message }}</p>
-        {% endfor %}
-        </div>
-    {% endif %}
-{% endwith %}
-    
 <h1>User Information</h1>
 <form method="POST" action="/preferences">
     Email: <input type="text" id="email" name="email"><br><br>
@@ -46,4 +39,7 @@
 </form>
     
 </body>
+
+{% endblock %}
+
 </html>
