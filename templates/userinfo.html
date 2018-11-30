@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang='en'>
+<head>
+    <meta charset='utf-8'>
+    <meta name=author content="Tamara Deshong">
+    <title>User Information</title>
+    
+</head>
+<body>
+    {% if msg %}
+    <p>{{msg}}</p>
+    {% endif %}
+    
+<h1>User Information</h1>
+<form method="POST" action="/preferences">
+    Email: <input type="text" id="email" name="email"><br><br>
+    Username: <input type="text" id="username" name="username"><br><br>
+    Password: <input type="text" id="password" name="password"><br><br>
+    Re-enter password: <input type="text" id="password1" name="password1"><br>
+    <br><br>
+    
+    Name: <input type="text" id="name"name="firstname"><br><br>
+    Preferred name/Nickname: <input type="text" id="nname" name="nickname"><br><br>
+    <br>
+    
+    Phone number: <input type="text" id="pnum" name="number"><br><br>
+    Class year: <input type="text" id="year" name="classNum"><br><br>
+    Industry: <input type="text" name="indust"><br><br>
+    Ancestry: <input type="text" name="ancest"><br><br>
+    Current Frisbee team: <input type="text" name="team"><br><br>
+    
+    <h3>Security</h3>
+    <p>Profile viewable to: </p><br><br>
+      <input type="radio" name="view" value="all"> Everyone<br>
+      <input type="radio" name="view" value="class"> Just whiptails in my class<br>
+      <input type="radio" name="view" value="overlap"> Whiptails with similar info<br>
+      <input type="radio" name="view" value="admin"> Just me<br><br>
+      
+      <p><input type="submit" value="Submit"></p>
+</form>
+    
+</body>
+</html>

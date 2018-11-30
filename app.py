@@ -6,7 +6,7 @@ app.secret_key = "notverysecret"
 
 @app.route('/')
 def index():
-    return render_template('empty.html')
+    return render_template('index.html')
 
 @app.route('/approved/')
 def viewApproved():
