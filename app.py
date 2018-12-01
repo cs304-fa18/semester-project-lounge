@@ -8,105 +8,173 @@ app.secret_key = "notverysecret"
 def index():
     return render_template('index.html')
 
-@app.route('/createAccount/', methods=['POST', 'GET'])
+@app.route('/createAccount/', methods=['GET', 'POST'])
 def logins():
-    if request.method == ('GET'):
+    if request.method == 'GET':
         return render_template('userinfo.html')
-    else:
-        email = request.form.get("email")
-        uname = request.form.get("username")
-        pwd1 = request.form.get("password1")
-        pwd2 = request.form.get("password2")
-        name = request.form.get("name")
-        nname = request.form.get("nickname")
-        year = request.form.get("year")
-        phnum =request.form.get("phnum")
-        sprefs = request.form.get("radio")
-
-        if email == "" or "@" not in email:
+    if request.method == 'POST':
+        error = False
+        email = ''
+        uname = ''
+        pwd1 = ''
+        pwd2 = ''
+        name = ''
+        nname = ''
+        year = ''
+        phnum = ''
+        sprefs = ''
+        industry = ''
+        fname = ''
+        ances = ''
+        team = ''
+        ttype = ''
+        ncity= ''
+        state = ''
+        country = ''
+        
+        try:
+            email = request.form.get("email")
+            uname = request.form.get("username")
+            pwd1 = request.form.get("password1")
+            pwd2 = request.form.get("password2")
+            name = request.form.get("name")
+            nname = request.form.get("nickname")
+            year = request.form.get("year")
+            phnum = request.form.get("phnum")
+            sprefs = request.form.get("sprefs")
+            industry = request.form.get("ind")
+            fname = request.form.get("fname")
+            ances = request.form.get("ancestor")
+            team = request.form.get("team")
+            ttype = request.form.get("t")
+            ncity = request.form.get("tcity")
+            state = request.form.get("tstate")
+            country = request.form.get("tcountry")
+        except:
+            flash("Access to missing form inputs")
+            error = True
+        
+        if uname == '':
+            error = True
+            flash("Missing input: Username is missing")
+        if pwd1 == '' or pwd2 == '':
+            error = True
+            flash("Missing input: One or both of the password fields are incomplete")
+        if pwd1 != pwd2:
+            error = True
+            flash("Passwords do not match")    
+        if email == '' or "@" not in email:
+            error = True
             flash("Invalid email address")
-        if pwd1 == "" or pwd2 == "":
-            flash("One or both of the password fields are incomplete")
-        if pwd1!= pwd2:
-            flash("The passwords do not match")
-        if name == "":
-            flash("The name fields is incomplete")
-        if uname =="":
-            flash("The user name incomplete")
-    
-        if not any([email=="",pwd1=="", pwd1!= pwd2, name == "",uname ==""]):
-            try:
-                login.insert(name, email, uname, pwd1, nname, phnum, year, \
-                sprefs)
-            except:
-                flash("username already exist") # username not in database
-    return render_template('userinfo.html')
-
+        if name == '':
+            error = True
+            flash("Missing input: Name is missing")
+        if not year.isdigit():
+            error = True
+            flash("Invalid class year")
+        if sprefs == '':
+            error = True
+            flash("Missing input: Security preferences missing")
+        
+        if not error:
+            conn = login.getConn("c9")
+            if login.findUser(conn, uname) is None:
+                flash("{} created an account".format(uname))
+                login.insertUser(conn, name, email, uname, pwd1, nname, phnum, year, sprefs)
+                
+                if industry != '':
+                    login.insertIndustry(conn, uname, industry)
+                if fname != '':
+                    login.insertFamily(conn, uname, fname, ances)
+                if team != '':
+                    login.insertTeam(conn, uname, team, ttype, ncity, state, country)
+                return redirect(url_for('index'))
+            else:
+                flash("Username already exists") # username not in database
+                return redirect(request.referrer)
+        else:
+            return redirect(request.referrer)
+                
 # Sets the user of the session
 @app.route('/setUID/', methods=['POST'])
 def setUID():
     uid = request.form.get('uid')
-    
-    if uid == '':
-        session['uid'] = uid
-        return redirect(request.referrer)
     session['uid'] = uid
+    
+    conn = login.getConn("c9")
+    session['utype'] = login.getUserType(conn, uid)
     return redirect(request.referrer)
     
 @app.route('/approved/')
 def viewApproved():
-    conn = events.getConn('c9')
-    all_events = events.getEvents(conn, 1)
-    return render_template('events.html', events=all_events)
+    if session['uid'] == '':
+        flash("Need to log in")
+        return redirect(request.referrer)
+    else:
+        conn = events.getConn('c9')
+        all_events = events.getEvents(conn, 1)
+        return render_template('events.html', events=all_events)
 
 @app.route('/submitted/')
 def viewSubmitted():
-    conn = events.getConn('c9')
-    all_events = events.getEvents(conn, 0)
-    return render_template('events.html', events=all_events, approve = "yes")
+    if session['uid'] == '':
+        flash("Need to log in")
+        return redirect(request.referrer)
+    else:
+        if session['utype']['user_type'] == 'regular':
+            flash('Not accessible for regular users')
+            return redirect(url_for('viewApproved'))
+        else:
+            conn = events.getConn('c9')
+            all_events = events.getEvents(conn, 0)
+            return render_template('events.html', events=all_events, approve = "yes")
 
 @app.route('/submitEvent/', methods=['POST'])
 def submitEvent():
-    error = False
-    name = ''
-    city = ''
-    state = ''
-    country = ''
-    description = ''
-    date = ''
-    
-    try:
-        name = request.form.get('name')
-        city = request.form.get('city')
-        state = request.form.get('state')
-        country = request.form.get('country')
-        desc = request.form.get('desc')
-        date = request.form.get('date')
-    except:
-        flash("Access to missing form inputs")
-        error = True
-    
-    if name == '':
-        flash("Missing input: Event's name is missing")
-        error = True
-    
-    checkdate = "".join(request.form.get('date').split("-"))
-    if not checkdate or not checkdate.isdigit():
-        error = True
-        if not checkdate:
-            flash("Missing input: Event's date is missing")
-        else:
-            flash("Date is not numeric")
-    
-    if not error:
-        conn = events.getConn('c9')
-        if events.checkEvent(conn, name, date):
-            flash("Event {} at {} exists".format(name, date))
-        else:
-            events.submitEvent(conn, name, city, state, country, desc, date)
-            flash("Event {} submitted for approval by admins".format(name))
+    if session['uid'] == '':
+        flash("Need to log in")
+        return redirect(request.referrer)
+    else:
+        error = False
+        name = ''
+        city = ''
+        state = ''
+        country = ''
+        description = ''
+        date = ''
+        
+        try:
+            name = request.form.get('name')
+            city = request.form.get('city')
+            state = request.form.get('state')
+            country = request.form.get('country')
+            desc = request.form.get('desc')
+            date = request.form.get('date')
+        except:
+            flash("Access to missing form inputs")
+            error = True
+        
+        if name == '':
+            flash("Missing input: Event's name is missing")
+            error = True
+        
+        checkdate = "".join(request.form.get('date').split("-"))
+        if not checkdate or not checkdate.isdigit():
+            error = True
+            if not checkdate:
+                flash("Missing input: Event's date is missing")
+            else:
+                flash("Date is not numeric")
+        
+        if not error:
+            conn = events.getConn('c9')
+            if events.checkEvent(conn, name, date):
+                flash("Event {} at {} exists".format(name, date))
+            else:
+                events.submitEvent(conn, name, city, state, country, desc, date)
+                flash("Event {} submitted for approval by admins".format(name))
             
-    return redirect(url_for('viewApproved'))
+        return redirect(url_for('viewApproved'))
 
 @app.route('/approveDeleteEvent/', methods=['POST'])
 def approveDeleteEvent():
@@ -129,7 +197,8 @@ def approveDeleteEvent():
 @app.route('/messages/')
 def messaging():
     if session['uid'] == '': # Not logged in yet
-        return render_template('empty.html') # Go to a temporary login 
+        flash("Need to log in")
+        return render_template('index.html') # Go to a temporary login 
     else:
         uid = session['uid']
         curs = messages.cursor('c9')
