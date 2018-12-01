@@ -19,7 +19,7 @@ create table user(
     username varchar(20) not NULL,
     password varchar(30) not NULL,
     user_type enum("regular","admin"),
-    sprefs enum("all", "class", "overlap", "admin"),
+    sprefs enum("all", "class", "overlap", "admin") not NULL,
     primary key(username)
     )
     ENGINE = InnoDB;
@@ -112,11 +112,10 @@ create table donation(
     ENGINE = InnoDB;
     
 create table family(
-    fid int not NULL,
     name varchar(30),
     predecessor varchar(20), 
     member varchar(20),
-    primary key(fid, member),
+    primary key(name, member),
     foreign key (predecessor) references user(username)
     on delete restrict on update cascade,
     foreign key (member) references user(username)

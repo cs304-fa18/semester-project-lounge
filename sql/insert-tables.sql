@@ -9,4 +9,4 @@ insert into team(tname,`type`,nearestcity,state,country,pid) values ("Brute Squa
 insert into location(pid,city,nearestcity,state,country) values ("ltso","NYC","NYC","NY","US");
 insert into feedback(subject,message,edate,pid) values ("practice","good","2018-11-09","rtang"), ("tourney","good","2018-11-09","ltso"), ("party","good","2018-11-09","tdeshong");
 insert into donation(pid,item,description) values ("rtang","cleats","adidas size 7"), ("ltso","uniform","2014"), ("tdeshong","money","so much money");
-insert into family(fid,name,predecessor,member) values (1,"dynasty","rtang","ltso"), (1,"herd","ltso","tdeshong");
+insert into family(name,predecessor,member) values ("dynasty","rtang","ltso"), ("herd","ltso","tdeshong");
