@@ -1,0 +1,112 @@
+<!--Lauren Tso-->
+<!doctype html>
+
+{% extends "index.html" %}
+{% block content %}
+
+<title>Events</title>
+<body>
+
+<form action="/submitEvent/" method="POST">
+    <fieldset>
+        <legend>Event Data</legend>
+        <table>
+            <tr><td><label for="name" accesskey="n"> Event Name:</label></td><td><input type="text" name="name" id="name"></td></tr>
+            <tr><td><label for="city" accesskey="c"> Event City:</label></td><td><input type="text" name="city" id="city"></td></tr>
+            <tr><td><label for="state" accesskey="s"> Event State:</label></td><td><input type="text" name="state" id="state"></td></tr>
+            <tr><td><label for="country" accesskey="o"> Event Country:</label></td><td><input type="text" name="country" id="country"></td></tr>
+            <tr><td><label for="desc" accesskey="d"> Event Description:</label></td><td><input type="text" name="desc" id="desc"></td></tr>
+            <tr><td><label for="date" accesskey="a"> Event Date:</label></td><td><input type="text" name="date" id="date"></td></tr>
+        </table>
+    </fieldset>
+    <p>
+        <input type='submit' value='Submit Event'>
+    </p>
+</form>
+ 
+<p>This button turns on/off all the JavaScript: <button id="progressive_enhancement">Turn On Progressive Enhancement</button>
+
+
+<table id="events-list">
+        <tr>
+            <th>Name</th>
+            <th>City</th>
+            <th>State</th>
+            <th>Country</th>
+            <th>Description</th>
+            <th>Date</th>
+            <th>RSVPs</th>
+        </tr>
+        </tr>
+        {% for event in events %}
+        <tr class = "event" data-id="{{event.ename}}-{{event.edate}}">
+            <td class="name">{{event.ename}}</td>
+            <td class="city">{{event.city}}</td>
+            <td class="state">{{event.state}}</td>
+            <td class="country">{{event.country}}</td>
+            <td class="description">{{event.description}}</td>
+            <td class="date">{{event.edate}}</td>
+            <td><span class="rsvps">{{event.rsvps}}</span></td>
+            <td><form method="post" action="/rsvpEvent/">
+                <input type="hidden" name="name" value="{{event.ename}}">
+                <input type="hidden" name="date" value="{{event.edate}}">
+                <input type="submit" class = "rsvp" name="rsvp" value="RSVP">
+            </form></td>
+            {% if approve %}
+            <td><form method="post" action="/approveDeleteEvent/">
+                <input type="hidden" name="name" value="{{event.ename}}">
+                <input type="hidden" name="date" value="{{event.edate}}">
+                <input type="submit" name="submit" value="Approve!">
+                <input type="submit" name="submit" value="Delete!">
+            </form></td>
+            {% endif %}
+        </tr>
+        {% endfor %}
+        
+    </table>
+ 
+</body>
+</html>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script>
+    // toggle progressive enhancement on click
+    var progressive_on = false;
+    $("#progressive_enhancement").on('click', function () {
+        if(progressive_on) {
+           // turn it off
+           $("input[name=rsvp]").show(); 
+           $("#progressive_enhancement").text('Turn on Progressive Enhancement'); // change text of button
+           progressive_on = false; 
+        } 
+        else {
+           // turn it on
+           $("input[name=rsvp]").hide();
+           $("#progressive_enhancement").text('Turn off Progressive Enhancement'); // change text of button
+           progressive_on = true; 
+       }
+    });
+    
+    var URL = "{{url_for('rsvpEventAjax')}}"; // set URL for Ajax updating
+
+    function updateRSVP(obj) {
+        var $row = $("[data-id="+obj.name+"-"+obj.date+"]"); 
+        console.log($row)
+        $row.find(".rsvps").text(obj.rsvp); 
+    }
+    
+    // define action on clicking a rating
+    $("#events-list").on("click",".rsvps",function(event) {
+        if (!progressive_on) { // do not act if progressive enhancement is off
+            return
+        }
+        else { 
+            var $row = $(this).closest("tr");
+            var name = $row.find('.name');
+            var date = $row.find('.date');
+            console.log('name is ' + name.text() + ' date is ' + date.text())
+            $.post(URL, {name: name.text(), date: date.text()}, updateRSVP) // send and retrieve rating information from jsonify
+        }
+    });
+</script>
+{% endblock %}
