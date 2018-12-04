@@ -249,14 +249,20 @@ def messagePerson():
     msgs = messages.getMessages(curs, uid, person)
     return jsonify(msgs)
 
-@app.route('/family/', methods=['GET'])
-def families():
+@app.route('/familySearch/', methods=['POST'])
+def redirect_url():
+    searchterm = request.form.get('searchterm') # take in searched search term
+    return redirect(url_for('getFamily', searchterm=searchterm)) # redirect to movie page with movies matching search
+
+@app.route('/family/', defaults={'searchterm':''}) # defaults to showing all movies
+@app.route('/family/<searchterm>/', methods=['GET'])
+def getFamily(searchterm):
     if session['uid'] == '': # Not logged in yet
         flash("Need to log in")
         return render_template('index.html') # Go to a temporary login 
     else:
         conn = family.getConn("c9")
-        families = family.getAll(conn)
+        families = family.getFamily(conn, searchterm)
         names_all = [fam['name'] for fam in families]
         names = list(set(names_all))
         return render_template('family.html', families=families, names=names)
