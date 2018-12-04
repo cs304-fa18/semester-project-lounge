@@ -25,10 +25,10 @@ def checkEvent(conn, name, date):
     row = curs.fetchone()
     return row['count'] > 0
     
-def submitEvent(conn, name, city, state, country, desc, date):
+def submitEvent(conn, name, city, state, country, desc, date, uname):
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
-    curs.execute('''insert into events(ename, city, state, country, description, edate, approved) 
-                    values(%s, %s, %s, %s, %s, %s, 0)''', (name, city, state, country, desc, date,))
+    curs.execute('''insert into events(ename, city, state, country, description, edate, approved, pid) 
+                    values(%s, %s, %s, %s, %s, %s, 0, %s)''', (name, city, state, country, desc, date, uname,))
                     
 def approveEvent(conn, name, date):
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
@@ -50,5 +50,5 @@ def getRSVP(conn, name, date):
 # ================================================================
 
 if __name__ == '__main__':
-    conn = getConn('wmdb')
+    conn = getConn('c9')
 

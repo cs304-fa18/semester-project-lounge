@@ -1,5 +1,5 @@
 from flask import (Flask, url_for, flash, render_template, request, redirect, session, jsonify)
-import events, messages, login
+import events, messages, login, family
 
 app = Flask(__name__)
 app.secret_key = "notverysecret"
@@ -113,7 +113,7 @@ def viewApproved():
     else:
         conn = events.getConn('c9')
         all_events = events.getEvents(conn, 1)
-        return render_template('events.html', events=all_events)
+        return render_template('events.html', events=all_events, submit = 'yes')
 
 @app.route('/submitted/')
 def viewSubmitted():
@@ -136,23 +136,12 @@ def submitEvent():
         return redirect(request.referrer)
     else:
         error = False
-        name = ''
-        city = ''
-        state = ''
-        country = ''
-        description = ''
-        date = ''
-        
-        try:
-            name = request.form.get('name')
-            city = request.form.get('city')
-            state = request.form.get('state')
-            country = request.form.get('country')
-            desc = request.form.get('desc')
-            date = request.form.get('date')
-        except:
-            flash("Access to missing form inputs")
-            error = True
+        name = request.form.get('name')
+        city = request.form.get('city')
+        state = request.form.get('state')
+        country = request.form.get('country')
+        desc = request.form.get('desc')
+        date = request.form.get('date')
         
         if name == '':
             flash("Missing input: Event's name is missing")
@@ -171,7 +160,7 @@ def submitEvent():
             if events.checkEvent(conn, name, date):
                 flash("Event {} at {} exists".format(name, date))
             else:
-                events.submitEvent(conn, name, city, state, country, desc, date)
+                events.submitEvent(conn, name, city, state, country, desc, date, session['uid'])
                 flash("Event {} submitted for approval by admins".format(name))
             
         return redirect(url_for('viewApproved'))
@@ -259,6 +248,28 @@ def messagePerson():
     curs=messages.cursor('c9')
     msgs = messages.getMessages(curs, uid, person)
     return jsonify(msgs)
+
+@app.route('/familySearch/', methods=['POST'])
+def redirect_url():
+    searchterm = request.form.get('searchterm') # take in searched search term
+    return redirect(url_for('getFamily', searchterm=searchterm)) # redirect to movie page with movies matching search
+
+@app.route('/family/', defaults={'searchterm':''}) # defaults to showing all movies
+@app.route('/family/<searchterm>/', methods=['GET'])
+def getFamily(searchterm):
+    if session['uid'] == '': # Not logged in yet
+        flash("Need to log in")
+        return render_template('index.html') # Go to a temporary login 
+    else:
+        conn = family.getConn("c9")
+        families = family.getFamily(conn, searchterm)
+        names_all = [fam['name'] for fam in families]
+        names = list(set(names_all))
+        return render_template('family.html', families=families, names=names)
+
+# @app.route('familySearch', methods=['POST'])
+# def familySearch():
+#     return render_template()
 
 if __name__ == '__main__':
     app.debug = True
