@@ -268,7 +268,9 @@ def families():
     else:
         conn = family.getConn("c9")
         families = family.getAll(conn)
-        return render_template('family.html', families=families)
+        names_all = [fam['name'] for fam in families]
+        names = list(set(names_all))
+        return render_template('family.html', families=families, names=names)
     # just show all families at this point
 
 if __name__ == '__main__':
