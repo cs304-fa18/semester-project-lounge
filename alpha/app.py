@@ -1,5 +1,5 @@
 from flask import (Flask, url_for, flash, render_template, request, redirect, session, jsonify)
-import events, messages, login
+import events, messages, login, family
 
 app = Flask(__name__)
 app.secret_key = "notverysecret"
@@ -259,6 +259,17 @@ def messagePerson():
     curs=messages.cursor('c9')
     msgs = messages.getMessages(curs, uid, person)
     return jsonify(msgs)
+
+@app.route('/family/', methods=['GET'])
+def families():
+    if session['uid'] == '': # Not logged in yet
+        flash("Need to log in")
+        return render_template('index.html') # Go to a temporary login 
+    else:
+        conn = family.getConn("c9")
+        families = family.getAll(conn)
+        return render_template('family.html', families=families)
+    # just show all families at this point
 
 if __name__ == '__main__':
     app.debug = True

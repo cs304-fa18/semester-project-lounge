@@ -50,5 +50,5 @@ def getRSVP(conn, name, date):
 # ================================================================
 
 if __name__ == '__main__':
-    conn = getConn('wmdb')
+    conn = getConn('c9')
 
