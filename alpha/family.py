@@ -20,6 +20,12 @@ def getAll(conn):
                     join user on family.predecessor = user.username or family.member = user.username
                     order by user.classyear''')
     return curs.fetchall()
+
+def findFamily(conn, name):
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    key = '%' + name + '%' # format the wildcard for sql search
+    curs.execute('''select name from family where member like %s''', (key,))
+    return curs.fetchall()
     
 # ================================================================
 

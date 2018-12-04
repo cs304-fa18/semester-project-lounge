@@ -9,6 +9,11 @@
     
     <h1>Family Trees</h1>
 
+    <form id="search" method="POST" action="/familySearch/">
+        <input id="searchterm" placeholder="Search" name="searchterm">
+        <button id="searchbutton" type="submit" name="submit" value="Search"> Search </button> 
+    </form>
+
     {% for name in names %}
         <table id="family-list">
             <tr>
