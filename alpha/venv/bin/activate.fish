@@ -32,11 +32,7 @@ end
 # unset irrelevant variables
 deactivate nondestructive
 
-<<<<<<< HEAD:venv/bin/activate.fish
-set -gx VIRTUAL_ENV "/home/ubuntu/workspace/lounge/venv"
-=======
-set -gx VIRTUAL_ENV "/home/ubuntu/workspace/draft/venv"
->>>>>>> 27afb9eb221e40fffa3cba9de3b2e37057a3293b:alpha/venv/bin/activate.fish
+set -gx VIRTUAL_ENV "/home/ubuntu/workspace/lounge/alpha/venv"
 
 set -gx _OLD_VIRTUAL_PATH $PATH
 set -gx PATH "$VIRTUAL_ENV/bin" $PATH

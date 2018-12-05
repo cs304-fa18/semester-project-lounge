@@ -39,11 +39,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-<<<<<<< HEAD:venv/bin/activate
-VIRTUAL_ENV="/home/ubuntu/workspace/lounge/venv"
-=======
-VIRTUAL_ENV="/home/ubuntu/workspace/draft/venv"
->>>>>>> 27afb9eb221e40fffa3cba9de3b2e37057a3293b:alpha/venv/bin/activate
+VIRTUAL_ENV="/home/ubuntu/workspace/lounge/alpha/venv"
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"
