@@ -1,7 +1,7 @@
 use c9;
 
 drop table if exists family;
-drop table if exists donations;
+drop table if exists donation;
 drop table if exists feedback;
 drop table if exists events;
 drop table if exists messages;
@@ -81,8 +81,9 @@ create table events(
     description varchar(140),
     edate date not NULL,
     approved bit,
+    rsvps int default 0,
     pid varchar(20) not NULL,
-    primary key(ename, edate),
+    primary key(ename,edate),
     foreign key (pid) references user(username)
     on delete restrict on update cascade
     )

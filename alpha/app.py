@@ -113,7 +113,7 @@ def viewApproved():
     else:
         conn = events.getConn('c9')
         all_events = events.getEvents(conn, 1)
-        return render_template('events.html', events=all_events)
+        return render_template('events.html', events=all_events, submit = 'yes')
 
 @app.route('/submitted/')
 def viewSubmitted():
@@ -136,23 +136,12 @@ def submitEvent():
         return redirect(request.referrer)
     else:
         error = False
-        name = ''
-        city = ''
-        state = ''
-        country = ''
-        description = ''
-        date = ''
-        
-        try:
-            name = request.form.get('name')
-            city = request.form.get('city')
-            state = request.form.get('state')
-            country = request.form.get('country')
-            desc = request.form.get('desc')
-            date = request.form.get('date')
-        except:
-            flash("Access to missing form inputs")
-            error = True
+        name = request.form.get('name')
+        city = request.form.get('city')
+        state = request.form.get('state')
+        country = request.form.get('country')
+        desc = request.form.get('desc')
+        date = request.form.get('date')
         
         if name == '':
             flash("Missing input: Event's name is missing")
@@ -171,7 +160,7 @@ def submitEvent():
             if events.checkEvent(conn, name, date):
                 flash("Event {} at {} exists".format(name, date))
             else:
-                events.submitEvent(conn, name, city, state, country, desc, date)
+                events.submitEvent(conn, name, city, state, country, desc, date, session['uid'])
                 flash("Event {} submitted for approval by admins".format(name))
             
         return redirect(url_for('viewApproved'))
@@ -192,6 +181,25 @@ def approveDeleteEvent():
         events.deleteEvent(conn, name, date)
         flash("Event {} deleted".format(name))
         return redirect(url_for('viewSubmitted'))
+        
+@app.route('/rsvpEvent/', methods=['POST'])
+def rsvpEvent():
+    conn = events.getConn('c9')
+    name = request.form.get('name')
+    date = request.form.get('date')
+    events.updateRSVP(conn, name, date)
+    flash("RSVPS for event {} increased by one".format(name))
+    return redirect(request.referrer)
+    
+@app.route('/rsvpEventAjax/', methods=['POST'])
+def rsvpEventAjax():
+    conn = events.getConn('c9')
+    name = request.form.get('name')
+    date = request.form.get('date')
+    events.updateRSVP(conn, name, date)
+    rsvp = events.getRSVP(conn, name, date)
+    print(rsvp)
+    return jsonify({'rsvp': rsvp['rsvps'], 'name': name, 'date': date})
 
 # Main page for messaging feature    
 @app.route('/messages/')
