@@ -1,0 +1,15 @@
+<<<<<<< HEAD:venv/bin/flask
+#!/home/ubuntu/workspace/lounge/venv/bin/python
+=======
+#!/home/ubuntu/workspace/draft/venv/bin/python
+>>>>>>> 27afb9eb221e40fffa3cba9de3b2e37057a3293b:alpha/venv/bin/flask
+
+# -*- coding: utf-8 -*-
+import re
+import sys
+
+from flask.cli import main
+
+if __name__ == '__main__':
+    sys.argv[0] = re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0])
+    sys.exit(main())
