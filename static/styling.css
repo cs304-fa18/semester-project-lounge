@@ -1,0 +1,153 @@
+body {
+    font-family: 'Raleway', sans-serif;
+    background-color: #b7dbfa;
+}
+
+.header {
+  padding: 80px;
+  background: white;
+  font-size: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  top: 10px;
+}
+
+img {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: 450px;
+    height: 180px;
+    float: left;
+}
+
+.header ul {
+    text-align: right;
+}
+
+.header li {
+    display: inline;
+    color: #88c3f7;
+    margin:15px;
+}
+
+a {
+    text-decoration: none !important;
+}
+
+a:visited {
+    color: #2E922D;
+}
+
+a:hover {
+    color: #07BEB8;
+}
+
+#msgsDiv {
+    display: flex;
+}
+
+#allM {
+   flex: 25%; 
+   border-radius: 8px;
+   padding:10px;
+}
+
+#newM {
+   flex: 75%; 
+   padding: 10px;
+   font-size: 16px;
+   border-style: solid;
+   border-width: medium;
+   border-color: white;
+   border-radius: 8px;
+}
+
+.senderM{
+    border: 2px solid #07BEB8;
+    background-color: #C4FFF9;
+    border-radius: 20px;
+    padding: 10px;
+    margin: 10px 0;
+    text-align: right;
+    float:right;
+    margin-bottom: 10px;
+    width:auto;
+    max-width: 50%;
+    position:relative;
+    clear: both;
+    word-wrap: break-word;
+}
+
+.otherM{
+    border: 2px solid #999;
+    background-color: #cccccc;
+    border-radius: 5px;
+    padding: 10px;
+    margin: 10px 0;    
+    text-align: left;
+    border-radius: 20px;
+    float:left;
+    width:auto;
+    max-width: 50%;
+    position:relative;
+    clear: both;
+    word-wrap: break-word;
+    margin-bottom: 10px;
+}
+
+.senderM:after {
+    content: "";
+    clear: both;
+    display: table;
+}
+
+.textField {
+    width: 800px;
+    height:50px;
+    border-radius: 8px;
+}
+
+.chooseMsgButton {
+    background-color: white;
+    padding: 10px 24px;
+    border: gray;
+    color: black;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    -webkit-transition-duration: 0.4s; /* Safari */
+    transition-duration: 0.4s;
+    width: 400px;
+    border-radius: 8px;
+}
+
+.chooseMsgButton:hover {
+    background-color: #2E922D;
+    color: white;
+}
+
+select {
+  width: 200px;
+  border-radius: 10px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  height: 25px;
+  font-family: 'Raleway', sans-serif;
+  background-color:white;
+  border: 2px solid #cccccc
+}
+
+input [name="text"]{
+    width:200px;
+    height:20px;
+    border-radius: 8px;
+    background-color: white;
+    border: 2px solid #cccccc
+}
+
+fieldset {
+    border-radius: 8px; 
+    border: 2px solid #07BEB8;
+}
