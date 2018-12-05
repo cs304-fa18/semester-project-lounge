@@ -8,7 +8,7 @@ import MySQLdb
 # return the connection to MySQLdb for particular user
 def getConn(db):
     conn =  MySQLdb.connect(host='localhost',
-                           user='ltso',
+                           user='rianntang',
                            passwd='',
                            db=db)
     conn.autocommit(True)

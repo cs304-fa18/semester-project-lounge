@@ -1,0 +1,28 @@
+<!--Riann Tang-->
+<!doctype html>
+
+{% extends "index.html" %}
+{% block content %}
+<title>Feedback</title>
+    <body>
+        <h1>Submitted Feedback</h1>
+        <table id="feedback-list">
+            <tr>
+                <th>Name</th>
+                <th>Date</th>
+                <th>Subject</th>
+                <th>Message</th>
+            </tr>
+            {% for feed in feedback %}
+            <tr class = "feedback" >
+                <td class="name">{{feed.pid}}</td>
+                <td class="date">{{feed.edate}}</td>
+                <td class="subject">{{feed.subject}}</td>
+                <td class="message">{{feed.message}}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </body>
+</html>
+{% endblock %}
+

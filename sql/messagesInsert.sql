@@ -1,5 +1,7 @@
 use c9;
 
+delete from messages;
+
 insert into messages (sender, receiver, message) 
     values ("ltso", "tdeshong", "Hey Tam!"),
     ("tdeshong", "ltso", "Lauren, what's up?"),
