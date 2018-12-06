@@ -114,6 +114,16 @@ def viewApproved():
         conn = events.getConn('c9')
         all_events = events.getEvents(conn, 1)
         return render_template('events.html', events=all_events, submit = 'yes')
+        
+@app.route('/approved/past/')
+def viewApprovedPast():
+    if session['uid'] == '':
+        flash("Need to log in")
+        return redirect(request.referrer)
+    else:
+        conn = events.getConn('c9')
+        past_events = events.getPastEvents(conn, 1)
+        return render_template('events.html', events=past_events, submit = 'yes')
 
 @app.route('/submitted/')
 def viewSubmitted():
@@ -126,7 +136,7 @@ def viewSubmitted():
             return redirect(url_for('viewApproved'))
         else:
             conn = events.getConn('c9')
-            all_events = events.getEvents(conn, 0)
+            all_events = events.getPastEvents(conn, 0)
             return render_template('events.html', events=all_events, approve = "yes")
 
 @app.route('/submitEvent/', methods=['POST'])
@@ -266,10 +276,6 @@ def getFamily(searchterm):
         names_all = [fam['name'] for fam in families]
         names = list(set(names_all))
         return render_template('family.html', families=families, names=names)
-
-# @app.route('familySearch', methods=['POST'])
-# def familySearch():
-#     return render_template()
 
 if __name__ == '__main__':
     app.debug = True

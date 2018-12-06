@@ -11,12 +11,12 @@
     <fieldset>
         <legend>Event Data</legend>
         <table>
-            <tr><td><label for="name" accesskey="n"> Event Name:</label></td><td><input type="text" name="name" id="name"></td></tr>
-            <tr><td><label for="city" accesskey="c"> Event City:</label></td><td><input type="text" name="city" id="city"></td></tr>
-            <tr><td><label for="state" accesskey="s"> Event State:</label></td><td><input type="text" name="state" id="state"></td></tr>
-            <tr><td><label for="country" accesskey="o"> Event Country:</label></td><td><input type="text" name="country" id="country"></td></tr>
-            <tr><td><label for="desc" accesskey="d"> Event Description:</label></td><td><input type="text" name="desc" id="desc"></td></tr>
-            <tr><td><label for="date" accesskey="a"> Event Date:</label></td><td><input type="text" name="date" id="date"></td></tr>
+            <tr><td><label for="name" accesskey="n"> Event Name *:</label></td><td><input type="text" name="name" id="name" placeholder="Millyfest"></td></tr>
+            <tr><td><label for="city" accesskey="c"> Event City:</label></td><td><input type="text" name="city" id="city" placeholder="Wellesley"></td></tr>
+            <tr><td><label for="state" accesskey="s"> Event State:</label></td><td><input type="text" name="state" id="state" placeholder="MA"></td></tr>
+            <tr><td><label for="country" accesskey="o"> Event Country:</label></td><td><input type="text" name="country" id="country" placeholder="US"></td></tr>
+            <tr><td><label for="desc" accesskey="d"> Event Description:</label></td><td><input type="text" name="desc" id="desc" placeholder="tourney"></td></tr>
+            <tr><td><label for="date" accesskey="a"> Event Date *:</label></td><td><input type="text" name="date" id="date" placeholder="2018-04-08"></td></tr>
         </table>
     </fieldset>
     <p>
@@ -25,7 +25,7 @@
 </form>
  
 <p>This button turns on/off all the JavaScript: <button id="progressive_enhancement">Turn On Progressive Enhancement</button>
-
+<p>You are viewing <a href='/approved'>upcoming events</a>. Click here to view <a href="/approved/past">past events</a> instead.</p>
 
 <table id="events-list">
         <tr>

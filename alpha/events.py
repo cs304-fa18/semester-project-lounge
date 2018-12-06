@@ -16,7 +16,14 @@ def getConn(db):
                            
 def getEvents(conn, approved):
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
-    curs.execute('''select * from events where approved = %s order by edate asc''', (approved,))
+    curs.execute('''select * from events where approved = %s and edate >= current_timestamp()
+                    order by edate asc''', (approved,))
+    return curs.fetchall()
+    
+def getPastEvents(conn, approved):
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''select * from events where approved = %s and edate < current_timestamp()
+                    order by edate asc''', (approved,))
     return curs.fetchall()
     
 def checkEvent(conn, name, date):
