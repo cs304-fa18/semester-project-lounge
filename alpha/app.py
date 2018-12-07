@@ -112,18 +112,13 @@ def viewApproved():
         return redirect(request.referrer)
     else:
         conn = events.getConn('c9')
-        all_events = events.getEvents(conn, 1)
-        return render_template('events.html', events=all_events, submit = 'yes')
-        
-@app.route('/approved/past/')
-def viewApprovedPast():
-    if session['uid'] == '':
-        flash("Need to log in")
-        return redirect(request.referrer)
-    else:
-        conn = events.getConn('c9')
+        up_events = events.getEvents(conn, 1)
+        up_id = [event['ename'].replace(' ', '') for event in up_events]
+        up = [(up_events[i], up_id[i]) for i in range(len(up_events))]
         past_events = events.getPastEvents(conn, 1)
-        return render_template('events.html', events=past_events, submit = 'yes')
+        past_id = [event['ename'].replace(' ', '') for event in past_events]
+        past = [(past_events[i], past_id[i]) for i in range(len(past_events))]
+        return render_template('events.html', up=up, past=past, submit = 'yes')
 
 @app.route('/submitted/')
 def viewSubmitted():
@@ -205,11 +200,11 @@ def rsvpEvent():
 def rsvpEventAjax():
     conn = events.getConn('c9')
     name = request.form.get('name')
+    eid = name.replace(' ', '')
     date = request.form.get('date')
     events.updateRSVP(conn, name, date)
     rsvp = events.getRSVP(conn, name, date)
-    print(rsvp)
-    return jsonify({'rsvp': rsvp['rsvps'], 'name': name, 'date': date})
+    return jsonify({'rsvp': rsvp['rsvps'], 'name': name, 'date': date, 'eid': eid})
 
 # Main page for messaging feature    
 @app.route('/messages/')
