@@ -8,7 +8,7 @@ import MySQLdb
 # return the connection to MySQLdb for particular user
 def getConn(db):
     conn =  MySQLdb.connect(host='localhost',
-                           user='ltso',
+                           user='rianntang',
                            passwd='',
                            db=db)
     conn.autocommit(True)
@@ -53,9 +53,8 @@ def getRSVP(conn, name, date):
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
     curs.execute('''select rsvps from events where ename = %s and edate = %s''', (name, date,))
     return curs.fetchone()
-
+    
 # ================================================================
 
 if __name__ == '__main__':
-    conn = getConn('c9')
-
+    conn = getConn('wmdb')

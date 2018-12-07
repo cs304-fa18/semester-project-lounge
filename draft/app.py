@@ -1,5 +1,5 @@
 from flask import (Flask, url_for, flash, render_template, request, redirect, session, jsonify)
-import events, messages, login
+import events, messages, login, donations, feedback
 
 app = Flask(__name__)
 app.secret_key = "notverysecret"
@@ -233,13 +233,134 @@ def sendMsgAjax():
     return jsonify(uid) #Could even return text
 
 # For showing messages with an individual person
-@app.route('/person/')   
+@app.route('/personMs/')   
 def messagePerson():
     uid = session['uid']
     person = request.args.get('person')
     curs=messages.cursor('c9')
     msgs = messages.getMessages(curs, uid, person)
     return jsonify(msgs)
+
+# Main page for donations, showing HTML form to submit donations
+@app.route('/donate/')
+def makeDonation():
+    if session['uid'] == '':
+        flash("Need to log in")
+        return redirect(request.referrer)
+    else:
+        return render_template('donations.html')  
+
+@app.route('/submitDonation/', methods=['POST'])
+def submitDonation():
+    if session['uid'] == '':
+        flash("Need to log in")
+        return redirect(request.referrer)
+    else:
+        error = False
+        uname = request.form.get('username')
+        item = request.form.get('item')
+        description = request.form.get('description')
+        
+        # Check to see all inputs have been filled out
+        if uname == '':
+            flash("Missing input: Please input your name")
+            error = True
+        
+        if item == None:
+            flash("Missing input: Please choose an item type")
+            error = True
+        
+        if description == '':
+            flash("Missing input: Please describe your item")
+            error = True
+            
+        if not error:
+            curs = donations.cursor('c9')
+            donations.submitDonation(curs, uname, item, description)
+            name=donations.getName(curs,uname)
+            name=name['name']
+            return render_template('donationSuccess.html', name = name) 
+        return render_template('donations.html')
+
+# An admin only page for viewing donations
+@app.route('/viewDonations/')
+def viewDonations():
+    if session['uid'] == '':
+        flash("Need to log in")
+        return redirect(request.referrer)
+    else: # Make sure user is an admin
+        if session['utype']['user_type'] == 'regular':
+            flash('Not accessible for regular users')
+            return redirect(url_for('makeDonation'))
+        else:
+            curs = donations.cursor('c9')
+            oldDonations = donations.getOldDonations(curs)
+            newDonations = donations.getNewDonations(curs)
+            return render_template('viewDonations.html', oldDonations=oldDonations, newDonations=newDonations)
+
+# Method to mark donations as read/unread
+@app.route('/markDonation/', methods=['POST'])
+def markSeen():
+    curs = messages.cursor('c9')
+    uid = session['uid']
+    did = request.form.get('did')
+    seen = 0;
+    if request.form.get('submit') == "Mark as read":
+        seen = 1;
+    donations.mark(curs, did, seen)
+    return redirect(url_for('viewDonations'))
+
+# Main page for feedback, showing HTML form to submit feedback
+@app.route('/feedback/')
+def giveFeedback():
+    if session['uid'] == '':
+        flash("Need to log in")
+        return redirect(request.referrer)
+    else:
+        return render_template('feedback.html') 
+
+@app.route('/submitFeedback/', methods=['POST'])
+def submitFeedback():
+    if session['uid'] == '':
+        flash("Need to log in")
+        return redirect(request.referrer)
+    else:
+        error = False
+        uname = request.form.get('username')
+        date = request.form.get('date')
+        subject = request.form.get('subject')
+        message = request.form.get('message')  
+        
+        if message == '':
+            flash("Missing input: Message is required")
+            error = True
+        
+        if date != '':
+            checkdate = "".join(request.form.get('date').split("-"))
+            if not checkdate.isdigit():
+                error = True
+                flash("Date is not numeric")
+        
+        if not error:
+            curs = feedback.cursor('c9')
+            feedback.submitFeedback(curs, uname, date, subject, message)
+            flash("Thanks for the feedback! Our admins will be in touch soon to follow up if necessary.")
+        return render_template('feedback.html')
+
+@app.route('/viewFeedback/')
+def viewFeedback():
+    if session['uid'] == '':
+        flash("Need to log in")
+        return redirect(request.referrer)
+    else: # Make sure user is an admin
+        if session['utype']['user_type'] == 'regular':
+            flash('Not accessible for regular users')
+            return redirect(url_for('makeDonation'))
+        else:
+            curs = feedback.cursor('c9')
+            fback = feedback.viewFeedback(curs)
+            return render_template('viewFeedback.html', feedback=fback)
+
 
 if __name__ == '__main__':
     app.debug = True

@@ -1,6 +1,5 @@
 <!--Riann Tang-->
 <!doctype html>
-
 {% extends "index.html" %}
 {% block content %}
 
@@ -11,39 +10,39 @@
     <meta name=description content="">
     <meta name=keywords content="">    
     <title>Messages!</title>
-
   </head>
   <body>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
-    <h1 class="title">Messaging!</h1>
     
     <!--Section for displaying names of people with whom user has a message history-->
-    <div id="allM"> 
-        <table id="messagesT" style="width:10%">
-          <tr>
-            <th>Name</th>
-          </tr>
-          {% for n in num %}
-            <tr class = 'tt' data-tt= {{mKeys[n]}}>
-                <td><button class="chooseMsgButton" type="button">{{ msgs[mKeys[n]] }}: {{mPrev[n]['message']}}</button></td>
-            </tr>
-          {% endfor %}
-        </table>
+    <div id="msgsDiv">
+      <div id="allM"> 
+          <table id="messagesT" style="width:10%">
+            {% for n in num %}
+              <tr class = 'tt' data-tt= {{mKeys[n]}}>
+                  <td><button class="chooseMsgButton" type="button"><strong>{{ msgs[mKeys[n]] }}:</strong> {{mPrev[n]['message']}}</button></td>
+              </tr>
+            {% endfor %}
+          </table>
+      </div>
+      
+      <!--Section for showing messages one person and sending them messages-->
+      <div id="newM">
+          <subdiv id="oneM">
+            <p>Choose a message from the left to start</p>
+          </subdiv>
+          <form id=newMForm action="/sendMsg/" method="POST">
+              <input class="textField" type="text" name="message" placeholder="Type a message...">
+              <span id="tt"></span> 
+          </form>
+      </div>
     </div>
     
-    <!--Section for showing messages one person and sending them messages-->
-    <div id="newM">
-        <subdiv id="oneM">
-          <p>Choose a message to start</p>
-        </subdiv>
-        <form id=newMForm action="/sendMsg/" method="POST">
-            <input type="text" name="message" placeholder="Type a message">
-            <span id="tt"></span> 
-        </form>
-    </div>
-
     <script>
+    $("#newM #newMForm").hide();
+    
       $("#messagesT").on("click", ".chooseMsgButton", function(event) {
+         $("#newM #newMForm").show();
         var $dt = $(this).closest("[data-tt]");
         var person = $dt.data('tt');
         
@@ -55,11 +54,15 @@
         var url = "{{url_for('messagePerson')}}";
         $.get(url, {person:person}, function(data){
           for (i=0;i<data.length;i++){
-            $("#oneM").append("<p>" + data[i]['sender'] + ": " + data[i]['message'] + "</p>");
+            if (data[i]['sender'] == person) {
+              $("#oneM").append("<div class='otherM'><p>" + data[i]['sender'] + ": " + data[i]['message'] + "</p></div>");
+            }
+            else {
+              $("#oneM").append("<div class='senderM'><p>" + data[i]['sender'] + ": " + data[i]['message'] + "</p></div>");
+            }
           }
         });
       })
-
       // Use Ajax to send message and show new message in message history
       $("#newMForm").on("submit", function(event) {
         event.preventDefault(); // Keep form from submitting normally
@@ -67,7 +70,7 @@
         var receiver = document.getElementById("newMForm").elements.namedItem("receiver").value;
         var message = document.getElementById("newMForm").elements.namedItem("message").value;
         $.post(url, {receiver: receiver, message:message}, function(data){
-          $("#oneM").append("<p>" + data + ": " + message + "</p>");
+          $("#oneM").append("<div class='senderM'><p>" + data + ": " + message + "</p></div>");
         }); 
         $("#newMForm")[0].reset(); //Clear the text field after message sends
       })

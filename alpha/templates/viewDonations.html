@@ -1,0 +1,53 @@
+<!--Riann Tang-->
+<!doctype html>
+
+{% extends "index.html" %}
+{% block content %}
+<title>Donations</title>
+    <body>
+        <h1>Submitted Donations</h1>
+        <h2>New Donations:</h2>
+        <table id="newDonations-list">
+            <tr>
+                <th>Name</th>
+                <th>Item</th>
+                <th>Description</th>
+            </tr>
+            {% for newD in newDonations %}
+            <tr class = "newDonation" >
+                <td class="name">{{newD.pid}}</td>
+                <td class="item">{{newD.item}}</td>
+                <td class="description">{{newD.description}}</td>
+                <td><form method="post" action="/markDonation/">
+                    <input type="hidden" name="did" value="{{newD.did}}">
+                    <input type="submit" name="submit" value="Mark as read">
+                    <input type="submit" name="submit" value="Mark as unread">
+                </form></td>
+            </tr>
+            {% endfor %}
+        </table>
+        
+        <h2>Old Donations:</h2>
+        <table id="oldDonations-list">
+            <tr>
+                <th>Name</th>
+                <th>Item</th>
+                <th>Description</th>
+            </tr>
+            {% for oldD in oldDonations %}
+            <tr class = "oldDonation" >
+                <td class="name">{{oldD.pid}}</td>
+                <td class="item">{{oldD.item}}</td>
+                <td class="description">{{oldD.description}}</td>
+                <td><form method="post" action="/markDonation/">
+                    <input type="hidden" name="did" value="{{oldD.did}}">
+                    <input type="submit" name="submit" value="Mark as read">
+                    <input type="submit" name="submit" value="Mark as unread">
+                </form></td>
+            </tr>
+            {% endfor %}
+        </table>
+    </body>
+</html>
+{% endblock %}
+

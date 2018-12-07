@@ -1,7 +1,7 @@
 use c9;
 
 drop table if exists family;
-drop table if exists donations;
+drop table if exists donation;
 drop table if exists feedback;
 drop table if exists events;
 drop table if exists messages;
@@ -18,7 +18,7 @@ create table user(
     classyear varchar(4),
     username varchar(20) not NULL,
     password varchar(30) not NULL,
-    user_type enum("regular","admin"),
+    user_type enum("regular","admin") default "regular",
     sprefs enum("all", "class", "overlap", "admin") not NULL,
     primary key(username)
     )
@@ -94,7 +94,7 @@ create table feedback(
     subject varchar(50),
     message varchar(140),
     edate date,
-    pid varchar(20) not NULL,
+    pid varchar(20),
     primary key(fid),
     foreign key (pid) references user(username)
     on delete restrict on update cascade
@@ -104,8 +104,9 @@ create table feedback(
 create table donation(
     did int auto_increment,
     pid varchar(20) not NULL, 
-    item enum("cleats", "uniform", "money", "other"),
+    item enum("cleats", "uniform", "other"),
     description varchar(140),
+    seen bit not NULL default 0,
     primary key(did),
     foreign key (pid) references user(username)
     on delete restrict on update cascade
