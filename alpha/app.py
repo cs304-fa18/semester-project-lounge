@@ -131,8 +131,17 @@ def viewSubmitted():
             return redirect(url_for('viewApproved'))
         else:
             conn = events.getConn('c9')
-            all_events = events.getPastEvents(conn, 0)
-            return render_template('events.html', events=all_events, approve = "yes")
+            up_events = events.getEvents(conn, 0)
+            up_id = [event['ename'].replace(' ', '') for event in up_events]
+            up = [(up_events[i], up_id[i]) for i in range(len(up_events))]
+            past_events = events.getPastEvents(conn, 0)
+            past_id = [event['ename'].replace(' ', '') for event in past_events]
+            past = [(past_events[i], past_id[i]) for i in range(len(past_events))]
+            return render_template('events.html', up=up, past=past, approve = "yes")
+            
+@app.route('/createEvent/', methods=['GET', 'POST'])
+def createEvent():
+    return render_template('createEvent.html')
 
 @app.route('/submitEvent/', methods=['POST'])
 def submitEvent():
@@ -168,7 +177,7 @@ def submitEvent():
                 events.submitEvent(conn, name, city, state, country, desc, date, session['uid'])
                 flash("Event {} submitted for approval by admins".format(name))
             
-        return redirect(url_for('viewApproved'))
+        return redirect(url_for('createEvent'))
 
 @app.route('/approveDeleteEvent/', methods=['POST'])
 def approveDeleteEvent():
