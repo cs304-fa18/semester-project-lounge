@@ -1,5 +1,5 @@
 from flask import (Flask, url_for, flash, render_template, request, redirect, session, jsonify)
-import events, messages, family, login, donations, feedback
+import events, messages, family, login, donations, feedback, conn
 
 app = Flask(__name__)
 app.secret_key = "notverysecret"
@@ -85,17 +85,17 @@ def newAccount():
             flash("Missing input: Security preferences missing")
         
         if not error:
-            conn = login.getConn("c9")
-            if login.findUser(conn, uname) is None:
+            curs = conn.getConn("c9")
+            if login.findUser(curs, uname) is None:
                 flash("{} created an account".format(uname))
-                login.insertUser(conn, name, email, uname, pwd1, nname, phnum, year, sprefs)
+                login.insertUser(curs, name, email, uname, pwd1, nname, phnum, year, sprefs)
                 
                 if industry != '':
-                    login.insertIndustry(conn, uname, industry)
+                    login.insertIndustry(curs, uname, industry)
                 if fname != '':
-                    login.insertFamily(conn, uname, fname, ances)
+                    login.insertFamily(curs, uname, fname, ances)
                 if team != '':
-                    login.insertTeam(conn, uname, team, ttype, ncity, state, country)
+                    login.insertTeam(curs, uname, team, ttype, ncity, state, country)
                 return redirect(url_for('index'))
             else:
                 flash("Username already exists") # username not in database
@@ -109,8 +109,8 @@ def setUID():
     uid = request.form.get('uid')
     session['uid'] = uid
     
-    conn = login.getConn("c9")
-    session['utype'] = login.getUserType(conn, uid)
+    curs = conn.getConn("c9")
+    session['utype'] = login.getUserType(curs, uid)
     return redirect(request.referrer)
     
 @app.route('/approved/')
@@ -119,11 +119,11 @@ def viewApproved():
         flash("Need to log in")
         return redirect(request.referrer)
     else:
-        conn = events.getConn('c9')
-        up_events = events.getEvents(conn, 1)
+        curs = conn.getConn('c9')
+        up_events = events.getEvents(curs, 1)
         up_id = [event['ename'].replace(' ', '') for event in up_events]
         up = [(up_events[i], up_id[i]) for i in range(len(up_events))]
-        past_events = events.getPastEvents(conn, 1)
+        past_events = events.getPastEvents(curs, 1)
         past_id = [event['ename'].replace(' ', '') for event in past_events]
         past = [(past_events[i], past_id[i]) for i in range(len(past_events))]
         return render_template('events.html', up=up, past=past, submit = 'yes')
@@ -138,8 +138,8 @@ def viewSubmitted():
             flash('Not accessible for regular users')
             return redirect(url_for('viewApproved'))
         else:
-            conn = events.getConn('c9')
-            all_events = events.getPastEvents(conn, 0)
+            curs = conn.getConn('c9')
+            all_events = events.getPastEvents(curs, 0)
             return render_template('events.html', events=all_events, approve = "yes")
 
 @app.route('/submitEvent/', methods=['POST'])
@@ -169,49 +169,49 @@ def submitEvent():
                 flash("Date is not numeric")
         
         if not error:
-            conn = events.getConn('c9')
-            if events.checkEvent(conn, name, date):
+            curs = conn.getConn('c9')
+            if events.checkEvent(curs, name, date):
                 flash("Event {} at {} exists".format(name, date))
             else:
-                events.submitEvent(conn, name, city, state, country, desc, date, session['uid'])
+                events.submitEvent(curs, name, city, state, country, desc, date, session['uid'])
                 flash("Event {} submitted for approval by admins".format(name))
             
         return redirect(url_for('viewApproved'))
 
 @app.route('/approveDeleteEvent/', methods=['POST'])
 def approveDeleteEvent():
-    conn = events.getConn('c9')
+    curs = conn.getConn('c9')
     name = request.form.get('name')
     date = request.form.get('date')
     
     if request.form.get('submit') == 'Approve!':
-        events.approveEvent(conn, name, date)
+        events.approveEvent(curs, name, date)
         flash("Event {} approved".format(name))
         return redirect(url_for('viewApproved'))
         
     if request.form.get('submit') == 'Delete!':
         print(name, date)
-        events.deleteEvent(conn, name, date)
+        events.deleteEvent(curs, name, date)
         flash("Event {} deleted".format(name))
         return redirect(url_for('viewSubmitted'))
         
 @app.route('/rsvpEvent/', methods=['POST'])
 def rsvpEvent():
-    conn = events.getConn('c9')
+    curs = conn.getConn('c9')
     name = request.form.get('name')
     date = request.form.get('date')
-    events.updateRSVP(conn, name, date)
+    events.updateRSVP(curs, name, date)
     flash("RSVPS for event {} increased by one".format(name))
     return redirect(request.referrer)
     
 @app.route('/rsvpEventAjax/', methods=['POST'])
 def rsvpEventAjax():
-    conn = events.getConn('c9')
+    curs = conn.getConn('c9')
     name = request.form.get('name')
     eid = name.replace(' ', '')
     date = request.form.get('date')
-    events.updateRSVP(conn, name, date)
-    rsvp = events.getRSVP(conn, name, date)
+    events.updateRSVP(curs, name, date)
+    rsvp = events.getRSVP(curs, name, date)
     return jsonify({'rsvp': rsvp['rsvps'], 'name': name, 'date': date, 'eid': eid})
 
 @app.route('/messages/')
@@ -222,7 +222,7 @@ def messaging():
         return render_template('index.html') # Go to a temporary login 
     else:
         uid = session['uid']
-        curs = messages.cursor('c9')
+        curs = conn.getConn('c9')
         allMsgs = messages.getMessageHistory(curs, uid) # Get people user has messaged/received messages from
         allK = list(allMsgs.keys())
         mPreview = [messages.getLastM(curs,uid, allK[i]) for i in range(0,len(allK))]
@@ -232,7 +232,7 @@ def messaging():
 @app.route('/sendMsg/', methods=['POST'])
 def sendMsg():
     """Sends a new message by inserting into the messaging table"""
-    curs = messages.cursor('c9')
+    curs = conn.getConn('c9')
     uid = session['uid']
     receiver = request.form.get('receiver')
     content = request.form.get('message')
@@ -243,7 +243,7 @@ def sendMsg():
 @app.route('/sendMsgAjax/', methods=['POST'])
 def sendMsgAjax():
     """Sends a message using Ajax updating"""
-    curs = messages.cursor('c9')
+    curs = conn.getConn('c9')
     uid = session['uid']
     receiver = request.form.get('receiver')
     content = request.form.get('message')
@@ -255,7 +255,7 @@ def messagePerson():
     """Returns all messages with a specific person"""
     uid = session['uid']
     person = request.args.get('person')
-    curs=messages.cursor('c9')
+    curs = conn.getConn('c9')
     msgs = messages.getMessages(curs, uid, person)
     return jsonify(msgs)
 
@@ -294,7 +294,7 @@ def submitDonation():
             error = True
             
         if not error:
-            curs = donations.cursor('c9')
+            curs = conn.getConn('c9')
             donations.submitDonation(curs, uname, item, description)
             name=donations.getName(curs,uname)
             name=name['name']
@@ -312,7 +312,7 @@ def viewDonations():
             flash('Not accessible for regular users')
             return redirect(url_for('makeDonation'))
         else:
-            curs = donations.cursor('c9')
+            curs = conn.getConn('c9')
             oldDonations = donations.getOldDonations(curs)
             newDonations = donations.getNewDonations(curs)
             return render_template('viewDonations.html', oldDonations=oldDonations, newDonations=newDonations)
@@ -320,7 +320,7 @@ def viewDonations():
 @app.route('/markDonation/', methods=['POST'])
 def markSeen():
     """Mark all messages as seen or unseen by updating the seen column of the donation table."""
-    curs = messages.cursor('c9')
+    curs = conn.getConn('c9')
     uid = session['uid']
     did = request.form.get('did')
     seen = 0;
@@ -360,9 +360,12 @@ def submitFeedback():
             if not checkdate.isdigit():
                 error = True
                 flash("Date is not numeric")
-        
+       
+        if uname == "": # PID in table must be specified or assigned NULL
+            uname = None
+            
         if not error:
-            curs = feedback.cursor('c9')
+            curs = conn.getConn('c9')
             feedback.submitFeedback(curs, uname, date, subject, message)
             flash("Thanks for the feedback! Our admins will be in touch soon to follow up if necessary.")
         return render_template('feedback.html')
@@ -378,7 +381,7 @@ def viewFeedback():
             flash('Not accessible for regular users')
             return redirect(url_for('makeDonation'))
         else:
-            curs = feedback.cursor('c9')
+            curs = conn.getConn('c9')
             fback = feedback.viewFeedback(curs)
             return render_template('viewFeedback.html', feedback=fback)
 
