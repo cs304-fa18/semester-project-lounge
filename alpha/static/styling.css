@@ -43,6 +43,15 @@ a:hover {
     color: #07BEB8;
 }
 
+#tabs {
+    width: 15%;
+    float: left;
+}
+
+#create-event {
+    margin-left: 15%;
+}
+
 #msgsDiv {
     display: flex;
 }

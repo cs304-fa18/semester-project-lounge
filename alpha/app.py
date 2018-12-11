@@ -1,5 +1,5 @@
 from flask import (Flask, url_for, flash, render_template, request, redirect, session, jsonify)
-import events, messages, login, donations, feedback
+import events, messages, family, login, donations, feedback
 
 app = Flask(__name__)
 app.secret_key = "notverysecret"
@@ -120,8 +120,13 @@ def viewApproved():
         return redirect(request.referrer)
     else:
         conn = events.getConn('c9')
-        all_events = events.getEvents(conn, 1)
-        return render_template('events.html', events=all_events, submit = 'yes')
+        up_events = events.getEvents(conn, 1)
+        up_id = [event['ename'].replace(' ', '') for event in up_events]
+        up = [(up_events[i], up_id[i]) for i in range(len(up_events))]
+        past_events = events.getPastEvents(conn, 1)
+        past_id = [event['ename'].replace(' ', '') for event in past_events]
+        past = [(past_events[i], past_id[i]) for i in range(len(past_events))]
+        return render_template('events.html', up=up, past=past, submit = 'yes')
 
 @app.route('/submitted/')
 def viewSubmitted():
@@ -134,7 +139,7 @@ def viewSubmitted():
             return redirect(url_for('viewApproved'))
         else:
             conn = events.getConn('c9')
-            all_events = events.getEvents(conn, 0)
+            all_events = events.getPastEvents(conn, 0)
             return render_template('events.html', events=all_events, approve = "yes")
 
 @app.route('/submitEvent/', methods=['POST'])
@@ -203,11 +208,11 @@ def rsvpEvent():
 def rsvpEventAjax():
     conn = events.getConn('c9')
     name = request.form.get('name')
+    eid = name.replace(' ', '')
     date = request.form.get('date')
     events.updateRSVP(conn, name, date)
     rsvp = events.getRSVP(conn, name, date)
-    print(rsvp)
-    return jsonify({'rsvp': rsvp['rsvps'], 'name': name, 'date': date})
+    return jsonify({'rsvp': rsvp['rsvps'], 'name': name, 'date': date, 'eid': eid})
 
 @app.route('/messages/')
 def messaging():
@@ -376,7 +381,6 @@ def viewFeedback():
             curs = feedback.cursor('c9')
             fback = feedback.viewFeedback(curs)
             return render_template('viewFeedback.html', feedback=fback)
-
 
 if __name__ == '__main__':
     app.debug = True

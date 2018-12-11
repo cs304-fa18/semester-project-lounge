@@ -3,7 +3,7 @@ import MySQLdb
 
 def getConn(db):
     conn =  MySQLdb.connect(host='localhost',
-                           user='rianntang',
+                           user='ltso',
                            passwd='',
                            db=db)
     conn.autocommit(True)
@@ -32,7 +32,7 @@ def insertIndustry(conn, username, industry):
 
 def insertFamily(conn, username, family, pred):
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
-    return curs.execute('''insert into family(memeber, name, predecessor) values (%s, %s, %s)''', [username, family, pred,])
+    return curs.execute('''insert into family(member, name, predecessor) values (%s, %s, %s)''', [username, family, pred,])
 
 def insertTeam(conn, username, team, ttype, ncity, state, country):
     curs = conn.cursor(MySQLdb.cursors.DictCursor)

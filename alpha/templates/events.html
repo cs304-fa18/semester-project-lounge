@@ -4,30 +4,93 @@
 {% extends "index.html" %}
 {% block content %}
 
-<title>Events</title>
-<body>
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Events</title>
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script>
+    $( function() {
+        $( "#tabs" ).tabs();
+    } );
+    </script>
+</head>
 
+<body>
+ 
+ 
+ 
 <form action="/submitEvent/" method="POST">
     <fieldset>
         <legend>Event Data</legend>
         <table>
-            <tr><td><label for="name" accesskey="n"> Event Name:</label></td><td><input type="text" name="name" id="name"></td></tr>
-            <tr><td><label for="city" accesskey="c"> Event City:</label></td><td><input type="text" name="city" id="city"></td></tr>
-            <tr><td><label for="state" accesskey="s"> Event State:</label></td><td><input type="text" name="state" id="state"></td></tr>
-            <tr><td><label for="country" accesskey="o"> Event Country:</label></td><td><input type="text" name="country" id="country"></td></tr>
-            <tr><td><label for="desc" accesskey="d"> Event Description:</label></td><td><input type="text" name="desc" id="desc"></td></tr>
-            <tr><td><label for="date" accesskey="a"> Event Date:</label></td><td><input type="text" name="date" id="date"></td></tr>
+            <tr><td><label for="name" accesskey="n"> Event Name *:</label></td><td><input type="text" name="name" id="name" placeholder="Millyfest"></td></tr>
+            <tr><td><label for="city" accesskey="c"> Event City:</label></td><td><input type="text" name="city" id="city" placeholder="Wellesley"></td></tr>
+            <tr><td><label for="state" accesskey="s"> Event State:</label></td><td><input type="text" name="state" id="state" placeholder="MA"></td></tr>
+            <tr><td><label for="country" accesskey="o"> Event Country:</label></td><td><input type="text" name="country" id="country" placeholder="US"></td></tr>
+            <tr><td><label for="desc" accesskey="d"> Event Description:</label></td><td><input type="text" name="desc" id="desc" placeholder="tourney"></td></tr>
+            <tr><td><label for="date" accesskey="a"> Event Date *:</label></td><td><input type="text" name="date" id="date" placeholder="2018-04-08"></td></tr>
         </table>
     </fieldset>
     <p>
         <input type='submit' value='Submit Event'>
     </p>
 </form>
- 
+
 <p>This button turns on/off all the JavaScript: <button id="progressive_enhancement">Turn On Progressive Enhancement</button>
 
 
-<table id="events-list">
+<div id="tabs">
+  <ul>
+    <li><a href="#tabs-1">Upcoming</a></li>
+    <li><a href="#tabs-2">Past</a></li>
+  </ul>
+    <div id="tabs-1">
+        <table id="events-list">
+            <tr>
+                <th>Name</th>
+                <th>City</th>
+                <th>State</th>
+                <th>Country</th>
+                <th>Description</th>
+                <th>Date</th>
+                {% if submit %}
+                <th>RSVPs</th>
+                {% endif %}
+            </tr>
+            {% for event, id in up %}
+            <tr class = "event" data-id="{{id}}-{{event.edate}}">
+                <td class="name">{{event.ename}}</td>
+                <td class="city">{{event.city}}</td>
+                <td class="state">{{event.state}}</td>
+                <td class="country">{{event.country}}</td>
+                <td class="description">{{event.description}}</td>
+                <td class="date">{{event.edate}}</td>
+                {% if submit %}
+                <td><span class="rsvps">{{event.rsvps}}</span></td>
+                <td><form method="post" action="/rsvpEvent/">
+                    <input type="hidden" name="name" value="{{event.ename}}">
+                    <input type="hidden" name="date" value="{{event.edate}}">
+                    <input type="submit" class = "rsvp" name="rsvp" value="RSVP">
+                </form></td>
+                {% endif %}
+                {% if approve %}
+                <td><form method="post" action="/approveDeleteEvent/">
+                    <input type="hidden" name="name" value="{{event.ename}}">
+                    <input type="hidden" name="date" value="{{event.edate}}">
+                    <input type="submit" name="submit" value="Approve!">
+                    <input type="submit" name="submit" value="Delete!">
+                </form></td>
+                {% endif %}
+            </tr>
+        {% endfor %}
+        </tr>
+    </table>
+  </div>
+  <div id="tabs-2">
+        <table id="events-list">
         <tr>
             <th>Name</th>
             <th>City</th>
@@ -39,9 +102,10 @@
             <th>RSVPs</th>
             {% endif %}
         </tr>
+        
         </tr>
-        {% for event in events %}
-        <tr class = "event" data-id="{{event.ename}}-{{event.edate}}">
+        {% for event, id in past %}
+        <tr class = "event" data-id="{{id}}-{{event.edate}}">
             <td class="name">{{event.ename}}</td>
             <td class="city">{{event.city}}</td>
             <td class="state">{{event.state}}</td>
@@ -67,35 +131,39 @@
         </tr>
         {% endfor %}
         
-    </table>
+    </table>    
+  </div>
+</div>
+
+ 
  
 </body>
 </html>
 
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 <script>
     // toggle progressive enhancement on click
     var progressive_on = false;
     $("#progressive_enhancement").on('click', function () {
         if(progressive_on) {
-           // turn it off
+          // turn it off
            $("input[name=rsvp]").show(); 
-           $("#progressive_enhancement").text('Turn on Progressive Enhancement'); // change text of button
+          $("#progressive_enhancement").text('Turn on Progressive Enhancement'); // change text of button
            progressive_on = false; 
         } 
         else {
-           // turn it on
+          // turn it on
            $("input[name=rsvp]").hide();
-           $("#progressive_enhancement").text('Turn off Progressive Enhancement'); // change text of button
+          $("#progressive_enhancement").text('Turn off Progressive Enhancement'); // change text of button
            progressive_on = true; 
-       }
+        }
     });
     
     var URL = "{{url_for('rsvpEventAjax')}}"; // set URL for Ajax updating
 
     function updateRSVP(obj) {
-        var $row = $("[data-id="+obj.name+"-"+obj.date+"]"); 
-        console.log($row)
+        var $row = $("[data-id="+obj.eid+"-"+obj.date+"]"); 
+        console.log('row is ' + $row)
+        console.log('text is ' + $row.find(".rsvps").val())
         $row.find(".rsvps").text(obj.rsvp); 
     }
     
