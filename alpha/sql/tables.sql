@@ -1,4 +1,4 @@
-use c9;
+use lounge_db;
 
 drop table if exists family;
 drop table if exists donation;

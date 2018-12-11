@@ -1,4 +1,4 @@
-use c9;
+use lounge_db;
 
 insert into events(ename,city,state,country,description,edate,approved,pid) values
     ("Lobster Pot","Wellesley","ME","US","tourney","2019-10-28",1,"tdeshong"),

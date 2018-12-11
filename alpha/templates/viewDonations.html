@@ -18,7 +18,7 @@
                 <td class="name">{{newD.pid}}</td>
                 <td class="item">{{newD.item}}</td>
                 <td class="description">{{newD.description}}</td>
-                <td><form method="post" action="/markDonation/">
+                <td><form method="post" action={{ url_for('markSeen') }}>
                     <input type="hidden" name="did" value="{{newD.did}}">
                     <input type="submit" name="submit" value="Mark as read">
                     <input type="submit" name="submit" value="Mark as unread">
@@ -39,7 +39,7 @@
                 <td class="name">{{oldD.pid}}</td>
                 <td class="item">{{oldD.item}}</td>
                 <td class="description">{{oldD.description}}</td>
-                <td><form method="post" action="/markDonation/">
+                <td><form method="post" action={{ url_for('markSeen') }}>
                     <input type="hidden" name="did" value="{{oldD.did}}">
                     <input type="submit" name="submit" value="Mark as read">
                     <input type="submit" name="submit" value="Mark as unread">

@@ -12,7 +12,7 @@
         target="_blank">official Wellesley giving page</a>. 
         Just select the designation as "Other" and specify "Ultimate Frisbee".</p>
         <p>Note: Required fields are denoted with a *</p>
-        <form name="donationsForm" action="/submitDonation/" method="POST">
+        <form name="donationsForm" action={{ url_for('submitDonation') }} method="POST">
             <fieldset>
                 <legend>Make Donation</legend>
                 <table>

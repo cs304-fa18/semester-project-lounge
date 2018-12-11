@@ -5,14 +5,9 @@
 
 <html>
   <head>
-    <meta charset="utf-8">
-    <meta name=author content="Riann Tang">
-    <meta name=description content="">
-    <meta name=keywords content="">    
     <title>Messages!</title>
   </head>
   <body>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
     
     <!--Section for displaying names of people with whom user has a message history-->
     <div id="msgsDiv">
@@ -39,7 +34,7 @@
     </div>
     
     <script>
-    $("#newM #newMForm").hide();
+      $("#newM #newMForm").hide();
     
       $("#messagesT").on("click", ".chooseMsgButton", function(event) {
          $("#newM #newMForm").show();
@@ -47,18 +42,20 @@
         var person = $dt.data('tt');
         
         // Hidden input with name of the receiver
-        $("#newM  #tt").html('<input type="hidden" id="receiver" name="receiver" value=' + person + '>')
+        $("#tt").html('<input type="hidden" id="receiver" name="receiver" value=' + person + '>')
         
         // Get messages history with selected person
         $("#oneM").empty();
+        $("#mHeader").empty();
         var url = "{{url_for('messagePerson')}}";
         $.get(url, {person:person}, function(data){
+          $("#newM").prepend("<subdiv id='mHeader'><h2>Messages with " + person + "</h2></subdiv>")
           for (i=0;i<data.length;i++){
             if (data[i]['sender'] == person) {
-              $("#oneM").append("<div class='otherM'><p>" + data[i]['sender'] + ": " + data[i]['message'] + "</p></div>");
+              $("#oneM").append("<div class='otherM'><p>" + data[i]['message'] + "</p></div>");
             }
             else {
-              $("#oneM").append("<div class='senderM'><p>" + data[i]['sender'] + ": " + data[i]['message'] + "</p></div>");
+              $("#oneM").append("<div class='senderM'><p>" + data[i]['message'] + "</p></div>");
             }
           }
         });
@@ -70,7 +67,7 @@
         var receiver = document.getElementById("newMForm").elements.namedItem("receiver").value;
         var message = document.getElementById("newMForm").elements.namedItem("message").value;
         $.post(url, {receiver: receiver, message:message}, function(data){
-          $("#oneM").append("<div class='senderM'><p>" + data + ": " + message + "</p></div>");
+          $("#oneM").append("<div class='senderM'><p>" + message + "</p></div>");
         }); 
         $("#newMForm")[0].reset(); //Clear the text field after message sends
       })

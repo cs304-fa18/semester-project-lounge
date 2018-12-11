@@ -14,14 +14,40 @@
                 <th>Message</th>
             </tr>
             {% for feed in feedback %}
-            <tr class = "feedback" >
+            <tr class = "feedback">
                 <td class="name">{{feed.pid}}</td>
                 <td class="date">{{feed.edate}}</td>
                 <td class="subject">{{feed.subject}}</td>
                 <td class="message">{{feed.message}}</td>
+                <td><button type="button" class="msg-person">Respond to feedback!</button></td>
             </tr>
             {% endfor %}
         </table>
+        
+        <script>
+            $(".msg-person").click(function() {
+                var $currentRow = $(this).closest("tr"); 
+                var person = $currentRow.find(".name").text(); 
+                var feedback = $currentRow.find(".message").text();
+                if (person != "None") {  // Make sure feedback was not submitted anonymously 
+                    var url = "{{url_for('sendMsgAjax')}}";
+                    var message = prompt("Please write a thank you note to " + person + "!");
+                    if (message === ""){ // Make sure a respone was written 
+                        alert ("Please input a message before sending!")
+                    }
+                    else {
+                        var message = "In response to your recent feedback, we wanted to say: " + message 
+                        $.post(url, {receiver: person, message:message}, function(data){ // Send the message
+                            alert("Message sent!")
+                        });
+                    }
+                }
+                else { 
+                    alert("This feedback was submitted anonymously and cannot be responded to.")
+                }
+            })
+        </script>
+
     </body>
 </html>
 {% endblock %}

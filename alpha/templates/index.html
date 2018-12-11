@@ -2,23 +2,30 @@
 
 <html lang='en'>
 <head>
+    <meta charset="utf-8">
+    <meta name=authors content="Riann Tang, Lauren Tso, Tamara Deshong">
+    <meta name=description content="">
+    <meta name=keywords content="">  
     <link href="https://fonts.googleapis.com/css?family=Raleway" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">
     <link rel='stylesheet' href="{{url_for('static',filename='styling.css')}}">
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
 </head>
 <title>Lounge</title>
 
 <body>
-    
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+
 <div class="header">
-    <a href="/"><img class="header_img" src="/static/logo.jpg" alt="Lounge Logo"></a>
+    <a href={{ url_for('index') }}><img src="/static/logo.jpg" alt="Lounge Logo" id="logo"></a>
     <ul>
-      <li><a href="/">Home</a></li>
-      <li><a href="/messages">Messages</a></li>
-      <li><a href="/approved">Events</a></li>
-      <li><a href="/donate">Donate</a></li>
-      <li><a href="/feedback">Feedback</a></li>
-      <li><a href="/family">Family</a></li>
+      <li><a href={{ url_for('index') }}>Home</a></li>
+      <li><a href={{ url_for('messaging') }}>Messages</a></li>
+      <li><a href={{ url_for('viewApproved') }}>Events</a></li>
+      <li><a href={{ url_for('makeDonation') }}>Donate</a></li>
+      <li><a href={{ url_for('giveFeedback') }}>Feedback</a></li>
+      <li><a href={{ url_for('adminBoard') }}>Admins</a></li>
+      <li><a href={{ url_for('getFamily') }}>Family</a><li>
     </ul>
 </div>
 
@@ -40,15 +47,13 @@
 <html>
     <body>
         <p>Log in!
-          <form action="/setUID/" method="POST">
+          <form action={{ url_for('setUID') }} method="POST">
             <input type="text" name="uid" placeholder="username">
-          </form>
-        </p>
     </body>
-    
-Lounge is a Whiptail database where current members and alumnae of the Wellesley 
+
+<p></p>Lounge is a Whiptail database where current members and alumnae of the Wellesley 
 ultimate frisbee team can more easily connect for fundraising, networking, and 
-socializing.
+socializing.</p>
 
 {% endblock %}
 </html>
