@@ -8,8 +8,16 @@ app.secret_key = "notverysecret"
 def index():
     return render_template('index.html')
 
+@app.route('/admin')
+def adminBoard():
+    if session['utype']['user_type'] == 'regular':
+        flash("Only admins can view this page")
+        return redirect(request.referrer)
+    else:
+        return render_template('admin.html')
+        
 @app.route('/createAccount/', methods=['GET', 'POST'])
-def logins():
+def newAccount():
     if request.method == 'GET':
         return render_template('userinfo.html')
     if request.method == 'POST':
@@ -201,9 +209,9 @@ def rsvpEventAjax():
     print(rsvp)
     return jsonify({'rsvp': rsvp['rsvps'], 'name': name, 'date': date})
 
-# Main page for messaging feature    
 @app.route('/messages/')
 def messaging():
+    """Returns html page with necessary data to populate messaging page."""
     if session['uid'] == '': # Not logged in yet
         flash("Need to log in")
         return render_template('index.html') # Go to a temporary login 
@@ -212,17 +220,13 @@ def messaging():
         curs = messages.cursor('c9')
         allMsgs = messages.getMessageHistory(curs, uid) # Get people user has messaged/received messages from
         allK = list(allMsgs.keys())
-        mPreview=[] # Empty list to store a preview of messages with each person
-        num=[] # For navigating for all the inputs in html page
-        for i in range(0,len(allK)):
-            mPreview.append(messages.getLastM(curs,uid, allK[i]))
-        for i in range(0,len(allMsgs)):
-            num.append(i)
+        mPreview = [messages.getLastM(curs,uid, allK[i]) for i in range(0,len(allK))]
+        num = [i for i in range(0,len(allMsgs))]
         return render_template('messages.html', num=num, msgs=allMsgs, mKeys=allK, mPrev=mPreview)
 
-# Sends new message        
 @app.route('/sendMsg/', methods=['POST'])
 def sendMsg():
+    """Sends a new message by inserting into the messaging table"""
     curs = messages.cursor('c9')
     uid = session['uid']
     receiver = request.form.get('receiver')
@@ -233,6 +237,7 @@ def sendMsg():
 # Sends new message with Ajax
 @app.route('/sendMsgAjax/', methods=['POST'])
 def sendMsgAjax():
+    """Sends a message using Ajax updating"""
     curs = messages.cursor('c9')
     uid = session['uid']
     receiver = request.form.get('receiver')
@@ -240,18 +245,18 @@ def sendMsgAjax():
     messages.sendMessage(curs, uid, receiver, content)
     return jsonify(uid) #Could even return text
 
-# For showing messages with an individual person
 @app.route('/personMs/')   
 def messagePerson():
+    """Returns all messages with a specific person"""
     uid = session['uid']
     person = request.args.get('person')
     curs=messages.cursor('c9')
     msgs = messages.getMessages(curs, uid, person)
     return jsonify(msgs)
 
-# Main page for donations, showing HTML form to submit donations
 @app.route('/donate/')
 def makeDonation():
+    """Returns html page populated with donation form"""
     if session['uid'] == '':
         flash("Need to log in")
         return redirect(request.referrer)
@@ -260,6 +265,7 @@ def makeDonation():
 
 @app.route('/submitDonation/', methods=['POST'])
 def submitDonation():
+    """Submits donation by inserting the data into the donation table"""
     if session['uid'] == '':
         flash("Need to log in")
         return redirect(request.referrer)
@@ -290,9 +296,9 @@ def submitDonation():
             return render_template('donationSuccess.html', name = name) 
         return render_template('donations.html')
 
-# An admin only page for viewing donations
 @app.route('/viewDonations/')
 def viewDonations():
+    """Returns html page populated with data of all submitted donations"""
     if session['uid'] == '':
         flash("Need to log in")
         return redirect(request.referrer)
@@ -306,9 +312,9 @@ def viewDonations():
             newDonations = donations.getNewDonations(curs)
             return render_template('viewDonations.html', oldDonations=oldDonations, newDonations=newDonations)
 
-# Method to mark donations as read/unread
 @app.route('/markDonation/', methods=['POST'])
 def markSeen():
+    """Mark all messages as seen or unseen by updating the seen column of the donation table."""
     curs = messages.cursor('c9')
     uid = session['uid']
     did = request.form.get('did')
@@ -318,9 +324,9 @@ def markSeen():
     donations.mark(curs, did, seen)
     return redirect(url_for('viewDonations'))
 
-# Main page for feedback, showing HTML form to submit feedback
 @app.route('/feedback/')
 def giveFeedback():
+    """Return html page with feedback form"""
     if session['uid'] == '':
         flash("Need to log in")
         return redirect(request.referrer)
@@ -329,6 +335,7 @@ def giveFeedback():
 
 @app.route('/submitFeedback/', methods=['POST'])
 def submitFeedback():
+    """Submit feedback by inserting feedback data into feedback table."""
     if session['uid'] == '':
         flash("Need to log in")
         return redirect(request.referrer)
@@ -357,6 +364,7 @@ def submitFeedback():
 
 @app.route('/viewFeedback/')
 def viewFeedback():
+    """Return all submitted feedback in html page"""
     if session['uid'] == '':
         flash("Need to log in")
         return redirect(request.referrer)

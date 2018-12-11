@@ -22,23 +22,23 @@ def cursor(db, rowType='dictionary'):
         curs = conn.cursor(MySQLdb.cursors.DictCursor)
     return curs
 
-# Helper function to get messages sent by given user
 def getSenderHist(curs, user):
+    """Return the name of people user has messaged."""
     curs.execute('''select receiver from messages where sender=%s''', (user,))
     return curs.fetchall()
 
-# Helper function to get messages received by given user  
 def getReceiveHist(curs,user):
+    """Return the name of people user has recieved messages from."""
     curs.execute('''select sender from messages where receiver=%s''', (user,))
     return curs.fetchall()
 
-# Helper function get the name of a user given their username
 def getName(curs, user):
+    """Return the name of the given user."""
     curs.execute('''select name from user where username=%s''', (user,))
     return curs.fetchone()
-
-# Function to get all messages sent and received by given user    
+   
 def getMessageHistory(curs, user):
+    """Return all messages user has sent and recieved messages from"""
     sendHist = getSenderHist(curs, user)
     receiveHist=getReceiveHist(curs, user)
     allMs = sendHist+receiveHist
@@ -56,20 +56,20 @@ def getMessageHistory(curs, user):
         mHist[distinctMs[i]] = name['name']
     return mHist
 
-# Function to get the most recently message between two users
 def getLastM(curs, user1, user2):
+    """Return most recent message between two given users"""
     curs.execute('''select message from messages where (sender=%s and receiver=%s) or 
     (sender=%s and receiver=%s) order by mid desc limit 1''',(user1,user2,user2,user1,))
     return curs.fetchone()
 
-# Function to get all messages between two users   
 def getMessages(curs, user1, user2):
+    """Return all messages between two given users"""
     curs.execute('''select message, sender from messages where (sender=%s and receiver=%s) 
     or (sender=%s and receiver=%s)''',(user1, user2, user2, user1,))
     return curs.fetchall()
 
-# Function to input a new message into the messages table
 def sendMessage(curs, sender, receiver, msg):
+    "Insert messages into messages table"
     curs.execute('''insert into messages (sender, receiver, message) values 
     (%s,%s,%s)''', (sender, receiver, msg,))
     

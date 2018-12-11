@@ -2,22 +2,29 @@
 
 <html lang='en'>
 <head>
+    <meta charset="utf-8">
+    <meta name=authors content="Riann Tang, Lauren Tso, Tamara Deshong">
+    <meta name=description content="">
+    <meta name=keywords content="">  
     <link href="https://fonts.googleapis.com/css?family=Raleway" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">
     <link rel='stylesheet' href="{{url_for('static',filename='styling.css')}}">
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
 </head>
 <title>Lounge</title>
 
 <body>
-    
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+
 <div class="header">
-    <a href="/"><img src="/static/logo.jpg" alt="Lounge Logo"></a>
+    <a href={{ url_for('index') }}><img src="/static/logo.jpg" alt="Lounge Logo" id="logo"></a>
     <ul>
-      <li><a href="/">Home</a></li>
-      <li><a href="/messages">Messages</a></li>
-      <li><a href="/approved">Events</a></li>
-      <li><a href="/donate">Donate</a></li>
-      <li><a href="/feedback">Feedback</a></li>
+      <li><a href={{ url_for('index') }}>Home</a></li>
+      <li><a href={{ url_for('messaging') }}>Messages</a></li>
+      <li><a href={{ url_for('viewApproved') }}>Events</a></li>
+      <li><a href={{ url_for('makeDonation') }}>Donate</a></li>
+      <li><a href={{ url_for('giveFeedback') }}>Feedback</a></li>
+      <li><a href={{ url_for('adminBoard') }}>Admins</a></li>
     </ul>
 </div>
 
@@ -39,16 +46,16 @@
 <html>
     <body>
         <p>Log in!
-          <form action="/setUID/" method="POST">
+          <form action={{ url_for('setUID') }} method="POST">
             <input type="text" name="uid" placeholder="username">
           </form>
         </p>
         
         <p>Check out our pages!
-            <a href="/">Home</a>
-            <a href="/createAccount/">Create a profile</a>
-            <a href="/approved/">Events</a>
-            <a href="/messages/">Messages</a>
+            <a href={{ url_for('index') }}>Home</a>
+            <a href={{ url_for('newAccount') }}>Create a profile</a>
+            <a href={{ url_for('viewApproved') }}>Events</a>
+            <a href={{ url_for('messaging') }}>Messages</a>
         </p>
     </body>
     

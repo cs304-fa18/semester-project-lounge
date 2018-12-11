@@ -8,7 +8,7 @@
         <h1>Submit Feedback</h1>
         <p>Have feedback about the site, questions about the team or some words of wisdeom? Submit them here!.</p>
         <p>Note: Required fields are denoted with a *</p>
-        <form name="feedbackForm" action="/submitFeedback/" method="POST">
+        <form name="feedbackForm" action={{ url_for('submitFeedback') }} method="POST">
             <fieldset>
                 <legend>Submit Feedback</legend>
                 <table>

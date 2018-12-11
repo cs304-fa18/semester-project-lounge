@@ -12,7 +12,7 @@ body {
   top: 10px;
 }
 
-img {
+#logo {
     position: absolute;
     top: 20px;
     left: 20px;
@@ -28,7 +28,7 @@ img {
 .header li {
     display: inline;
     color: #88c3f7;
-    margin:15px;
+    padding: 10px;
 }
 
 a {
@@ -63,11 +63,22 @@ a:hover {
    border-radius: 8px;
 }
 
+#mHeader {
+    text-align: left;
+    font-size: 18px;
+    font-weight:bold;
+    font-family: 'Montserrat', sans-serif;
+    float:left;
+    z-index: 2;
+    text-transform: uppercase;
+    text-decoration: underline;
+    color: #2E922D;
+}
+
 .senderM{
     border: 2px solid #07BEB8;
     background-color: #C4FFF9;
     border-radius: 20px;
-    padding: 10px;
     margin: 10px 0;
     text-align: right;
     float:right;
@@ -77,13 +88,13 @@ a:hover {
     position:relative;
     clear: both;
     word-wrap: break-word;
+    padding-left: 8px;
+    padding-right: 8px;
 }
 
 .otherM{
     border: 2px solid #999;
     background-color: #cccccc;
-    border-radius: 5px;
-    padding: 10px;
     margin: 10px 0;    
     text-align: left;
     border-radius: 20px;
@@ -94,6 +105,8 @@ a:hover {
     clear: both;
     word-wrap: break-word;
     margin-bottom: 10px;
+    padding-left: 8px;
+    padding-right: 8px;
 }
 
 .senderM:after {
@@ -111,7 +124,7 @@ a:hover {
 .chooseMsgButton {
     background-color: white;
     padding: 10px 24px;
-    border: gray;
+    border-color: #2E922D;
     color: black;
     text-align: center;
     text-decoration: none;
@@ -136,7 +149,6 @@ select {
   height: 25px;
   font-family: 'Raleway', sans-serif;
   background-color:white;
-  border: 2px solid #cccccc
 }
 
 input [name="text"]{
@@ -150,4 +162,11 @@ input [name="text"]{
 fieldset {
     border-radius: 8px; 
     border: 2px solid #07BEB8;
+}
+
+#team-pic {
+    top: 20px;
+    left: 20px;
+    width: 1000px;
+    height: 600px;
 }
