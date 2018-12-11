@@ -116,7 +116,8 @@ def setUID():
     curs = conn.getConn("c9")
     session['utype'] = login.getUserType(curs, uid)
     return redirect(request.referrer)
-    
+
+
 @app.route('/approved/')
 def viewApproved():
     if session.get('uid') == None:
@@ -132,6 +133,25 @@ def viewApproved():
         past = [(past_events[i], past_id[i]) for i in range(len(past_events))]
         return render_template('events.html', up=up, past=past, submit = 'yes')
 
+@app.route('/events/<eid>', methods=['GET'])
+def listEvent(eid):
+    conn = events.getConn('c9')
+    new_id = eid.split('_')
+    name = new_id[0]
+    date = new_id[1]
+    event = events.getEvent(conn, name, date)
+    past = False
+    if event in events.getPastEvents(conn, 1):
+        past = True
+    return render_template('event.html', event = event, past=past)
+    
+@app.route('/moreEvent/', methods=['POST'])
+def moreEvent():
+    name = request.form.get('name')
+    date = request.form.get('date')
+    eid = str(name) + '_' + str(date)
+    return redirect(url_for('listEvent', eid=eid))
+
 @app.route('/submitted/')
 def viewSubmitted():
     if session.get('uid') == None:
@@ -142,9 +162,18 @@ def viewSubmitted():
             flash('Not accessible for regular users')
             return redirect(url_for('viewApproved'))
         else:
-            curs = conn.getConn('c9')
-            all_events = events.getPastEvents(curs, 0)
-            return render_template('events.html', events=all_events, approve = "yes")
+            conn = events.getConn('c9')
+            up_events = events.getEvents(conn, 0)
+            up_id = [event['ename'].replace(' ', '') for event in up_events]
+            up = [(up_events[i], up_id[i]) for i in range(len(up_events))]
+            past_events = events.getPastEvents(conn, 0)
+            past_id = [event['ename'].replace(' ', '') for event in past_events]
+            past = [(past_events[i], past_id[i]) for i in range(len(past_events))]
+            return render_template('events.html', up=up, past=past, approve = "yes")
+            
+@app.route('/createEvent/', methods=['GET', 'POST'])
+def createEvent():
+    return render_template('createEvent.html')
 
 @app.route('/submitEvent/', methods=['POST'])
 def submitEvent():
@@ -180,7 +209,7 @@ def submitEvent():
                 events.submitEvent(curs, name, city, state, country, desc, date, session['uid'])
                 flash("Event {} submitted for approval by admins".format(name))
             
-        return redirect(url_for('viewApproved'))
+        return redirect(url_for('createEvent'))
 
 @app.route('/approveDeleteEvent/', methods=['POST'])
 def approveDeleteEvent():
@@ -204,7 +233,7 @@ def rsvpEvent():
     curs = conn.getConn('c9')
     name = request.form.get('name')
     date = request.form.get('date')
-    events.updateRSVP(curs, name, date)
+    events.updateRSVP(conn, name, date, session['uid'])
     flash("RSVPS for event {} increased by one".format(name))
     return redirect(request.referrer)
     
@@ -214,9 +243,18 @@ def rsvpEventAjax():
     name = request.form.get('name')
     eid = name.replace(' ', '')
     date = request.form.get('date')
-    events.updateRSVP(curs, name, date)
-    rsvp = events.getRSVP(curs, name, date)
+    events.updateRSVP(conn, name, date, session['uid'])
+    rsvp = events.getRSVP(conn, name, date)
     return jsonify({'rsvp': rsvp['rsvps'], 'name': name, 'date': date, 'eid': eid})
+
+@app.route('/findRSVPsAjax/', methods=['POST'])
+def findRSVPsAjax():
+    conn = events.getConn('c9')
+    name = request.form.get('name')
+    date = request.form.get('date')
+    rsvps = events.getPeople(conn, name, date)
+    str_rsvps = [rsvp['name'] for rsvp in rsvps]
+    return jsonify({'rsvps': str_rsvps})
 
 @app.route('/messages/')
 def messaging():
@@ -384,6 +422,24 @@ def viewFeedback():
             curs = conn.getConn('c9')
             fback = feedback.viewFeedback(curs)
             return render_template('viewFeedback.html', feedback=fback)
+
+@app.route('/familySearch/', methods=['POST'])
+def redirect_url():
+    searchterm = request.form.get('searchterm') # take in searched search term
+    return redirect(url_for('getFamily', searchterm=searchterm)) # redirect to movie page with movies matching search
+
+@app.route('/family/', defaults={'searchterm':''}) # defaults to showing all movies
+@app.route('/family/<searchterm>/', methods=['GET'])
+def getFamily(searchterm):
+    if session['uid'] == '': # Not logged in yet
+        flash("Need to log in")
+        return render_template('index.html') # Go to a temporary login 
+    else:
+        conn = family.getConn("c9")
+        families = family.getFamily(conn, searchterm)
+        names_all = [fam['name'] for fam in families]
+        names = list(set(names_all))
+        return render_template('family.html', families=families, names=names)
 
 if __name__ == '__main__':
     app.debug = True

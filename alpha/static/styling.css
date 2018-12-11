@@ -12,7 +12,7 @@ body {
   top: 10px;
 }
 
-#logo {
+.header img {
     position: absolute;
     top: 20px;
     left: 20px;
@@ -41,15 +41,6 @@ a:visited {
 
 a:hover {
     color: #07BEB8;
-}
-
-#tabs {
-    width: 15%;
-    float: left;
-}
-
-#create-event {
-    margin-left: 15%;
 }
 
 #msgsDiv {

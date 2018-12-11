@@ -3,6 +3,7 @@ use lounge_db;
 drop table if exists family;
 drop table if exists donation;
 drop table if exists feedback;
+drop table if exists rsvps;
 drop table if exists events;
 drop table if exists messages;
 drop table if exists team;
@@ -87,6 +88,14 @@ create table events(
     foreign key (pid) references user(username)
     on delete restrict on update cascade
     )
+    ENGINE = InnoDB;
+    
+create table rsvps(
+    uname varchar(20) not NULL,
+    ename varchar(50),
+    edate date,
+    primary key(uname, ename, edate)
+)
     ENGINE = InnoDB;
     
 create table feedback(
