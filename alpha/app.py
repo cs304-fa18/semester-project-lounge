@@ -10,11 +10,15 @@ def index():
 
 @app.route('/admin')
 def adminBoard():
-    if session['utype']['user_type'] == 'regular':
-        flash("Only admins can view this page")
-        return redirect(request.referrer)
+    if session.get('uid') == None:
+        flash("Need to log in")
+        return render_template('index.html')
     else:
-        return render_template('admin.html')
+        if session['utype']['user_type'] == 'regular':
+            flash("Only admins can view this page")
+            return redirect(request.referrer)
+        else:
+            return render_template('admin.html')
         
 @app.route('/createAccount/', methods=['GET', 'POST'])
 def newAccount():
@@ -115,9 +119,9 @@ def setUID():
     
 @app.route('/approved/')
 def viewApproved():
-    if session['uid'] == '':
+    if session.get('uid') == None:
         flash("Need to log in")
-        return redirect(request.referrer)
+        return render_template('index.html')
     else:
         curs = conn.getConn('c9')
         up_events = events.getEvents(curs, 1)
@@ -130,9 +134,9 @@ def viewApproved():
 
 @app.route('/submitted/')
 def viewSubmitted():
-    if session['uid'] == '':
+    if session.get('uid') == None:
         flash("Need to log in")
-        return redirect(request.referrer)
+        return render_template('index.html')
     else:
         if session['utype']['user_type'] == 'regular':
             flash('Not accessible for regular users')
@@ -144,9 +148,9 @@ def viewSubmitted():
 
 @app.route('/submitEvent/', methods=['POST'])
 def submitEvent():
-    if session['uid'] == '':
+    if session.get('uid') == None:
         flash("Need to log in")
-        return redirect(request.referrer)
+        return render_template('index.html')
     else:
         error = False
         name = request.form.get('name')
@@ -217,9 +221,9 @@ def rsvpEventAjax():
 @app.route('/messages/')
 def messaging():
     """Returns html page with necessary data to populate messaging page."""
-    if session['uid'] == '': # Not logged in yet
+    if session.get('uid') == None:
         flash("Need to log in")
-        return render_template('index.html') # Go to a temporary login 
+        return render_template('index.html')
     else:
         uid = session['uid']
         curs = conn.getConn('c9')
@@ -262,18 +266,18 @@ def messagePerson():
 @app.route('/donate/')
 def makeDonation():
     """Returns html page populated with donation form"""
-    if session['uid'] == '':
+    if session.get('uid') == None:
         flash("Need to log in")
-        return redirect(request.referrer)
+        return render_template('index.html')
     else:
         return render_template('donations.html')  
 
 @app.route('/submitDonation/', methods=['POST'])
 def submitDonation():
     """Submits donation by inserting the data into the donation table"""
-    if session['uid'] == '':
+    if session.get('uid') == None:
         flash("Need to log in")
-        return redirect(request.referrer)
+        return render_template('index.html')
     else:
         error = False
         uname = request.form.get('username')
@@ -304,11 +308,11 @@ def submitDonation():
 @app.route('/viewDonations/')
 def viewDonations():
     """Returns html page populated with data of all submitted donations"""
-    if session['uid'] == '':
+    if session.get('uid') == None:
         flash("Need to log in")
-        return redirect(request.referrer)
-    else: # Make sure user is an admin
-        if session['utype']['user_type'] == 'regular':
+        return render_template('index.html')
+    else: 
+        if session['utype']['user_type'] == 'regular': # Make sure user is an admin
             flash('Not accessible for regular users')
             return redirect(url_for('makeDonation'))
         else:
@@ -332,52 +336,48 @@ def markSeen():
 @app.route('/feedback/')
 def giveFeedback():
     """Return html page with feedback form"""
-    if session['uid'] == '':
+    if session.get('uid') == None:
         flash("Need to log in")
-        return redirect(request.referrer)
-    else:
+        return render_template('index.html')
+    else: 
         return render_template('feedback.html') 
 
 @app.route('/submitFeedback/', methods=['POST'])
 def submitFeedback():
     """Submit feedback by inserting feedback data into feedback table."""
-    if session['uid'] == '':
-        flash("Need to log in")
-        return redirect(request.referrer)
-    else:
-        error = False
-        uname = request.form.get('username')
-        date = request.form.get('date')
-        subject = request.form.get('subject')
-        message = request.form.get('message')  
+    error = False
+    uname = request.form.get('username')
+    date = request.form.get('date')
+    subject = request.form.get('subject')
+    message = request.form.get('message')  
         
-        if message == '':
-            flash("Missing input: Message is required")
+    if message == '':
+        flash("Missing input: Message is required")
+        error = True
+        
+    if date != '':
+        checkdate = "".join(request.form.get('date').split("-"))
+        if not checkdate.isdigit():
             error = True
-        
-        if date != '':
-            checkdate = "".join(request.form.get('date').split("-"))
-            if not checkdate.isdigit():
-                error = True
-                flash("Date is not numeric")
+            flash("Date is not numeric")
        
-        if uname == "": # PID in table must be specified or assigned NULL
-            uname = None
+    if uname == "": # PID in table must be specified or assigned NULL
+        uname = None
             
-        if not error:
-            curs = conn.getConn('c9')
-            feedback.submitFeedback(curs, uname, date, subject, message)
-            flash("Thanks for the feedback! Our admins will be in touch soon to follow up if necessary.")
-        return render_template('feedback.html')
+    if not error:
+        curs = conn.getConn('c9')
+        feedback.submitFeedback(curs, uname, date, subject, message)
+        flash("Thanks for the feedback! Our admins will be in touch soon to follow up if necessary.")
+    return render_template('feedback.html')
 
 @app.route('/viewFeedback/')
 def viewFeedback():
     """Return all submitted feedback in html page"""
-    if session['uid'] == '':
+    if session.get('uid') == None:
         flash("Need to log in")
-        return redirect(request.referrer)
-    else: # Make sure user is an admin
-        if session['utype']['user_type'] == 'regular':
+        return render_template('index.html')
+    else: 
+        if session['utype']['user_type'] == 'regular': # Make sure user is an admin
             flash('Not accessible for regular users')
             return redirect(url_for('makeDonation'))
         else:
