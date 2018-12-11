@@ -24,6 +24,7 @@ def getFamily(conn, searchterm):
                     or family.member = user.username having family.name in %s
                     order by user.classyear''', (wildcard,))
     return curs.fetchall()
+    
 
 # need to inner join to search user name instead of username
 def findFamily(conn, name):

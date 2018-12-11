@@ -13,6 +13,11 @@ def getConn(db):
                            db=db)
     conn.autocommit(True)
     return conn
+
+def getEvent(conn, name, date):
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''select * from events where ename = %s and edate = %s''', (name, date,))
+    return curs.fetchone()
                            
 def getEvents(conn, approved):
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
@@ -44,15 +49,22 @@ def approveEvent(conn, name, date):
 def deleteEvent(conn, name, date):
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
     curs.execute('''delete from events where ename = %s and edate = %s''', (name, date,))
-    
-def updateRSVP(conn, name, date):
+
+def updateRSVP(conn, name, date, uname):
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
-    curs.execute('''update events set rsvps = rsvps + 1 where ename = %s and edate = %s''', (name, date,))
+    curs.execute('''insert into rsvps(uname, ename, edate) values(%s, %s, %s)''', (uname, name, date,))
+    curs.execute('''update events set rsvps = rsvps + 1 where ename = %s and edate = %s''', (name, date,)) # need to inner join on rsvps
 
 def getRSVP(conn, name, date):
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
     curs.execute('''select rsvps from events where ename = %s and edate = %s''', (name, date,))
     return curs.fetchone()
+    
+def getPeople(conn, name, date):
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''select name from user inner join rsvps on user.username = rsvps.uname 
+                    where ename = %s and edate = %s''', (name, date,))
+    return curs.fetchall()
     
 # ================================================================
 
