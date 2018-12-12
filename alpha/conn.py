@@ -6,9 +6,9 @@ import cs304auth
 
 def getConn():
     conn =  MySQLdb.connect(host='localhost',
-                           user='ltso',
+                           user='rianntang',
                            passwd='',
-                           db='lounge_db')
+                           db='c9')
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
     conn.autocommit(True)
     return curs

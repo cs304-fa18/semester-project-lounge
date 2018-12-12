@@ -1,10 +1,9 @@
 from flask import (Flask, url_for, flash, render_template, request, redirect, session, jsonify)
 from datetime import date, datetime
 from threading import Thread, Lock
+import events, messages, family, login, donations, feedback, conn, profiles
 from werkzeug import secure_filename
-
 import bcrypt
-import events, messages, family, login, donations, feedback, conn
 
 app = Flask(__name__)
 app.secret_key = "notverysecret"
@@ -473,10 +472,10 @@ def redirect_url():
     searchterm = request.form.get('searchterm') # take in searched search term
     return redirect(url_for('getFamily', searchterm=searchterm)) # redirect to movie page with movies matching search
 
-@app.route('/family/', defaults={'searchterm':''}) # defaults to showing all movies
+@app.route('/family/', defaults={'searchterm':''}) # defaults to showing all families
 @app.route('/family/<searchterm>/', methods=['GET'])
 def getFamily(searchterm):
-    if session['uid'] == '': # Not logged in yet
+    if session.get('uid') == '':# Not logged in yet
         flash("Need to log in")
         return render_template('index.html') # Go to a temporary login 
     else:
@@ -485,6 +484,48 @@ def getFamily(searchterm):
         names_all = [fam['name'] for fam in families]
         names = list(set(names_all))
         return render_template('family.html', families=families, names=names)
+        
+@app.route('/profile/<username>/', methods=['GET'])
+def getProfile(username):
+    """Retrieves the profile of the given user and ensures security preferences are respected"""
+    currentU = session.get('uid')
+    if currentU == '':
+        flash("Need to log in")
+        return render_template('index.html')
+        
+    curs = conn.getConn()
+    if len(profiles.checkPerson(curs, username)) == 0:
+        return render_template('search.html', dne=1)
+    
+    #Get all the user's info
+    basic = profiles.getBasicInfo(curs, username)
+    industry = profiles.getIndustry(curs, username)
+    team = profiles.getTeam(curs, username)
+    contact = profiles.getContactInfo(curs, username)
+    
+    #Check user's security preferences and whether person viewing profiles matches prefs
+    prefs = profiles.getSecurityPrefs(curs, username)['sprefs']
+
+    if session['utype']['user_type'] == 'admin': #Admins can always view all info
+        permiss =1 
+    elif prefs == "all":
+        permiss = 1
+    elif prefs == "class":
+        if profiles.getYear(curs, username) == profiles.getYear(curs, currentU):
+            print "same class"
+            permiss = 1
+    elif prefs == "overlap":
+        if profiles.getOverlap(curs, username, currentU) == 1:
+            permiss = 1
+    
+    try: # Determine how much to show on html page
+        permiss
+        return render_template('profile.html', basic=basic, industry=industry, team=team, 
+                                contact=contact, permiss=permiss)
+    except NameError:
+        npermiss = 1
+        return render_template('profile.html', basic=basic, industry=industry, team=team, 
+                                contact=contact, npermiss=npermiss)
 
 if __name__ == '__main__':
     app.debug = True
