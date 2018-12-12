@@ -170,3 +170,33 @@ fieldset {
     width: 1000px;
     height: 600px;
 }
+
+#profile {
+   display: flex;
+   padding: 10px;
+   border-style: solid;
+   border-width: medium;
+   border-color: white;
+   border-radius: 8px;
+}
+
+#profHead {
+    padding: 8px;
+}
+
+#profile h2 {
+    color: #07BEB8;
+    text-decoration: underline;
+}
+
+#industry{
+    flex: 33%;  
+}
+
+#team {
+    flex: 33%;
+}
+
+#contact {
+    flex: 33%;
+}

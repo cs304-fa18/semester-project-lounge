@@ -1,0 +1,69 @@
+<!--Riann Tang-->
+<!doctype html>
+
+{% extends "index.html" %}
+{% block content %}
+<title></title>
+    <body>
+        <div id ="profHead">
+            <h1>{{basic.name}} "{{basic.nickname}}"</h1>
+            <p>Class of {{basic.classyear}}</p>
+            <form id="userForm">
+                <input type="hidden" name="uname" value={{basic.username}}>
+            </form>
+            <button type="button" class="msg-person">Message {{basic.nickname}}</button>
+        </div>
+        
+        <script>
+            $(".msg-person").click(function() {
+                var person = userForm.elements["uname"].value;
+                var url = "{{url_for('sendMsgAjax')}}";
+                var message = prompt("Please write a thank you note to " + person + "!");
+                if (message === "") { // Make sure a respone was written 
+                    alert("Please input a message before sending!")
+                }
+                else {
+                    $.post(url, { receiver: person, message: message }, function(data) { // Send the message
+                        alert("Message sent!")
+                    });
+                }
+            })
+        </script>
+        <div id="profile">
+            {% if permiss %}
+                <div id="industry">
+                    <h2>Industry</h2>
+                    <p>{{industry.iname}}</p>
+                </div>
+                <div id="team">
+                    <h2>Team</h2>
+                    <p>Name: {{team.tname}}</p>
+                    <p>City: {{team.nearestcity}}</p>
+                    <p>State: {{team.state}}</p>
+                    <p>Country: {{team.country}}</p>
+                </div>
+                <div id="contact">
+                    <h2>Contact Info</h2>
+                    <p>Phone: {{contact.phnum}}</p>
+                    <p>Email: {{contact.email}}</p>
+                </div>
+            {% endif %}
+            {% if npermiss %}
+                <div id="industry">
+                    <h2>Industry</h2>
+                    <p>Login to view this info</p>
+                </div>
+                <div id="team">
+                    <h2>Team</h2>
+                    <p>Login to view this info</p>
+                </div>
+                <div id="contact">
+                    <h2>Contact Info</h2>
+                    <p>Login to view this info</p>
+                </div>
+            {% endif %}
+        </div>
+    </body>
+</html>
+{% endblock %}
+
