@@ -1,11 +1,5 @@
 <!doctype html>
-<html lang='en'>
-<head>
-    <meta charset='utf-8'>
-    <meta name=author content="Tamara Deshong">
-    <title>User Information</title>
-    
-</head>
+
 {% extends "index.html" %}
 
 {% block content %}
@@ -29,55 +23,8 @@
             </td></tr>
         </table>
     </fieldset>
-    <br>
-    <fieldset>
-        <legend>Personal Information</legend>
-        <table>
-            <tr><td><label for="name"> Name:</label></td><td><input type="text" name="name" id="name"></td></tr>
-            <tr><td><label for="nickname"> Nickname:</label></td><td><input type="text" name="nickname" id="nickname"></td></tr>
-            <tr><td><label for="phnum"> Phone number:</label></td><td><input type="text" name="phnum" id="phnum"></td></tr>
-            <tr><td><label for="year"> Class year:</label></td><td><input type="text" name="year" id="year"></td></tr>
-        </table>
-    </fieldset>
-    <br>
-    <fieldset>
-        <legend>Industry Information</legend>
-        <table>
-            <tr><td><label for="industry"> Industry:<br>
-                <input type="radio" name="ind" value="GandL"> Government and Law<br>
-                <input type="radio" name="ind" value="TandE"> Technology and Engineering<br>
-                <input type="radio" name="ind" value="CandF"> Consulting and Finance<br>
-                <input type="radio" name="ind" value="PandLS"> Physical and Life Sciences<br>
-                <input type="radio" name="ind" value="EandN"> Education and Nonprofit<br>
-                <input type="radio" name="ind" value="HP"> Health Professions<br>
-            </td></tr>
-        </table>
-    </fieldset>
-    <br>
-    <fieldset>
-        <legend>Family Information</legend>
-        <table>    
-            <tr><td><label for="fname"> Family name:</label></td><td><input type="text" name="fname" id="fname"></td></tr>
-            <tr><td><label for="ancestor"> Ancestor:</label></td><td><input type="text" name="ancestor" id="ancestor"></td></tr>
-        </table>
-    </fieldset>
-    <br>
-    <fieldset>
-        <legend>Team Information</legend>
-        <table>    
-            <tr><td><label for="team"> Team:</label></td><td><input type="text" name="team" id="team"></td></tr>
-            <tr><td><label for="ttype"> Team type:<br>
-                <input type="radio" name="t" value="club"> Club<br>
-                <input type="radio" name="t" value="league"> League<br>
-                <input type="radio" name="t" value="college"> College<br>
-            </td></tr>
-            <tr><td><label for="tcity"> Nearest city:</label></td><td><input type="text" name="tcity" id="tcity"></td></tr>
-            <tr><td><label for="tstate"> State:</label></td><td><input type="text" name="tstate" id="tstate"></td></tr>
-            <tr><td><label for="tcountry"> Country:</label></td><td><input type="text" name="tcountry" id="tcountry"></td></tr>
-        </table>
-    </fieldset>
     <p>
-        <input type='submit' value='Create Account'>
+        <input type="submit" id="submit" name="submit" value="Create">
     </p>
 </form>
 

@@ -5,7 +5,7 @@ import MySQLdb
 
 def getConn(db):
     conn = MySQLdb.connect(host='localhost',
-                           user='ubuntu',
+                           user='ltso',
                            passwd='',
                            db=db)
     conn.autocommit(True)
@@ -32,14 +32,14 @@ def search (search_items):
     
 def preference(username):
     conn = getConn("c9")
-    curs = conn.cuursor(MySQLdb.cursors.DictCursor)
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
     curs.execute('''select * from user where name = %s''',
                   [username])
     return curs.fetchone()
 
 def industry(username):
     conn = getConn("c9")
-    curs = conn.cuursor(MySQLdb.cursors.DictCursor)
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
     curs.execute('''select * from industry where pid = %s''',
                   [username])
     return curs.fetchone()

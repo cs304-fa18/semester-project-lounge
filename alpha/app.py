@@ -2,6 +2,8 @@ from flask import (Flask, url_for, flash, render_template, request, redirect, se
 from datetime import date, datetime
 from threading import Thread, Lock
 import events, messages, family, login, donations, feedback, conn, profiles
+from werkzeug import secure_filename
+import bcrypt
 
 app = Flask(__name__)
 app.secret_key = "notverysecret"
@@ -9,70 +11,35 @@ lock = Lock()
 
 @app.route('/')
 def index():
-    uid = session.get('uid', '')
-    session['uid'] = uid
-    curs = conn.getConn()
-    session['utype'] = login.getUserType(curs, uid)
     return render_template('index.html')
 
 @app.route('/admin/')
 def adminBoard():
     if session.get('uid') == '':
         flash("Need to log in")
-        return render_template('index.html')
+        return redirect(url_for('index'))
+    if session.get('utype') == 'regular':
+        flash('Need admin privileges')
+        return redirect(url_for('index'))
     else:
-        if session['utype']['user_type'] == 'regular':
-            flash("Only admins can view this page")
-            return redirect(request.referrer)
-        else:
-            return render_template('admin.html')
-        
+        return render_template('admin.html')
+
+@app.route('/account/', methods=['GET', 'POST'])
+def account():
+    return render_template('userinfo.html')
+
 @app.route('/createAccount/', methods=['GET', 'POST'])
 def newAccount():
     if request.method == 'GET':
-        return render_template('userinfo.html')
+        return redirect(url_for('account'))
     if request.method == 'POST':
         error = False
-        email = ''
-        uname = ''
-        pwd1 = ''
-        pwd2 = ''
-        name = ''
-        nname = ''
-        year = ''
-        phnum = ''
-        sprefs = ''
-        industry = ''
-        fname = ''
-        ances = ''
-        team = ''
-        ttype = ''
-        ncity= ''
-        state = ''
-        country = ''
-        
-        try:
-            email = request.form.get("email")
-            uname = request.form.get("username")
-            pwd1 = request.form.get("password1")
-            pwd2 = request.form.get("password2")
-            name = request.form.get("name")
-            nname = request.form.get("nickname")
-            year = request.form.get("year")
-            phnum = request.form.get("phnum")
-            sprefs = request.form.get("sprefs")
-            industry = request.form.get("ind")
-            fname = request.form.get("fname")
-            ances = request.form.get("ancestor")
-            team = request.form.get("team")
-            ttype = request.form.get("t")
-            ncity = request.form.get("tcity")
-            state = request.form.get("tstate")
-            country = request.form.get("tcountry")
-        except:
-            flash("Access to missing form inputs")
-            error = True
-        
+        email = request.form.get("email", '')
+        uname = request.form.get("username", '')
+        pwd1 = request.form.get("password1", '')
+        pwd2 = request.form.get("password2", '')
+        sprefs = request.form.get("sprefs", '')
+
         if uname == '':
             error = True
             flash("Missing input: Username is missing")
@@ -82,47 +49,115 @@ def newAccount():
         if pwd1 != pwd2:
             error = True
             flash("Passwords do not match")    
-        if email == '' or "@" not in email:
+        if "@" not in email:
             error = True
             flash("Invalid email address")
+        if sprefs == '':
+            error = True
+            flash("Missing input: Security preferences missing")
+        
+        if error:
+             return redirect(request.referrer)
+
+        curs = conn.getConn()
+        hashed = bcrypt.hashpw(pwd1.encode('utf-8'), bcrypt.gensalt())
+        print('hased is ' + hashed)
+        if login.findUser(curs, uname) is not None:
+            flash('That username is taken')
+            return redirect(url_for('index'))
+        login.insertUser(curs, email, uname, hashed, sprefs)
+        return redirect(url_for('index'))
+            
+@app.route('/login/', methods=['POST'])
+def loginuser():
+    try:
+        username = request.form.get('uid')
+        passwd = request.form.get('pwd')
+        curs = conn.getConn()
+        row = login.getPassword(curs, username)
+        if row is None:
+            # Same response as wrong password, so no information about what went wrong
+            flash('login incorrect. Try again or join')
+            return redirect( url_for('index'))
+        hashed = row['password']
+        utype = row['user_type']
+        # strings always come out of the database as unicode objects
+        if bcrypt.hashpw(passwd.encode('utf-8'),hashed.encode('utf-8')) == hashed:
+            flash('successfully logged in as '+ username)
+            session['username'] = username
+            session['logged_in'] = True
+            session['visits'] = 1
+            session['utype'] = utype
+            return redirect(url_for('index'))
+        else:
+            flash('login incorrect. Try again or join')
+            return redirect(url_for('index'))
+    except Exception as err:
+        flash('form submission error '+ str(err))
+        return redirect( url_for('index') )
+
+@app.route('/logout/', methods=['POST'])
+def logout():
+    try:
+        if 'username' in session:
+            username = session['username']
+            session.pop('username')
+            session.pop('logged_in')
+            flash('{} is logged out'.format(username))
+            return redirect(url_for('index'))
+        else:
+            flash('you are not logged in. Please login or join')
+            return redirect( url_for('index') )
+    except Exception as err:
+        flash('some kind of error '+str(err))
+        return redirect( url_for('index') )
+
+@app.route('/completeProfile/', methods=['GET', 'POST'])
+def completeProfile():
+    return render_template('moreinfo.html')
+
+@app.route('/updateProfile/', methods=['POST'])
+def updateProfile():
+    if session.get('uid') == '':
+        flash("Need to log in")
+        return render_template('index.html')
+    else:
+        uname = session.get('uid')
+        name = request.form.get("name", '')
+        nname = request.form.get("nickname", '')
+        year = request.form.get("year", '')
+        phnum = request.form.get("phnum", '')
+        industry = request.form.get("ind", '')
+        fname = request.form.get("fname", '')
+        ances = request.form.get("ancestor", '')
+        team = request.form.get("team", '')
+        ttype = request.form.get("t", '')
+        ncity = request.form.get("tcity", '')
+        state = request.form.get("tstate", '')
+        country = request.form.get("tcountry", '')
+        
+        error = False
         if name == '':
             error = True
             flash("Missing input: Name is missing")
         if not year.isdigit():
             error = True
             flash("Invalid class year")
-        if sprefs == '':
-            error = True
-            flash("Missing input: Security preferences missing")
         
         if not error:
             curs = conn.getConn()
-            if login.findUser(curs, uname) is None:
-                flash("{} created an account".format(uname))
-                login.insertUser(curs, name, email, uname, pwd1, nname, phnum, year, sprefs)
-                
-                if industry != '':
-                    login.insertIndustry(curs, uname, industry)
-                if fname != '':
-                    login.insertFamily(curs, uname, fname, ances)
-                if team != '':
-                    login.insertTeam(curs, uname, team, ttype, ncity, state, country)
-                return redirect(url_for('index'))
-            else:
-                flash("Username already exists") # username not in database
-                return redirect(request.referrer)
+            login.updateUser(curs, uname, name, nname, phnum, year)
+                    
+            if industry != '':
+                login.insertIndustry(curs, uname, industry)
+            if fname != '':
+                login.insertFamily(curs, uname, fname, ances)
+            if team != '':
+                login.insertTeam(curs, uname, team, ttype, ncity, state, country)
+            flash('updated profile!')
+            return redirect(url_for('index'))
         else:
             return redirect(request.referrer)
-                
-# Sets the user of the session
-@app.route('/setUID/', methods=['POST'])
-def setUID():
-    uid = request.form.get('uid', '')
-    session['uid'] = uid
-    curs = conn.getConn()
-    session['utype'] = login.getUserType(curs, uid)
-    return redirect(request.referrer)
-
 
 @app.route('/approved/')
 def viewApproved():
@@ -167,7 +202,7 @@ def viewSubmitted():
         flash("Need to log in")
         return render_template('index.html')
     else:
-        if session['utype']['user_type'] == 'regular':
+        if session.get('utype') == 'regular':
             flash('Not accessible for regular users')
             return redirect(url_for('viewApproved'))
         else:
@@ -359,7 +394,7 @@ def viewDonations():
         flash("Need to log in")
         return render_template('index.html')
     else: 
-        if session['utype']['user_type'] == 'regular': # Make sure user is an admin
+        if session.get('utype') == 'regular': # Make sure user is an admin
             flash('Not accessible for regular users')
             return redirect(url_for('makeDonation'))
         else:
@@ -424,7 +459,7 @@ def viewFeedback():
         flash("Need to log in")
         return render_template('index.html')
     else: 
-        if session['utype']['user_type'] == 'regular': # Make sure user is an admin
+        if session.get('utype') == 'regular': # Make sure user is an admin
             flash('Not accessible for regular users')
             return redirect(url_for('makeDonation'))
         else:

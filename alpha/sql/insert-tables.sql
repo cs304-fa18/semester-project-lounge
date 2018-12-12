@@ -1,7 +1,7 @@
 use lounge_db;
 
-insert into user(name,nickname,classyear,username,password,user_type,sprefs) values ("Riann","Nut",2019,"rtang","pass","admin","all"),
-("Lauren","ebae",2020,"ltso","pass","admin","all"), ("Tam","Briese",2019,"tdeshong","pass","admin","all");
+insert into user(name,nickname,classyear,username,password,user_type,sprefs) values ("Riann","Nut",2019,"rtang","$2b$12$Tss6Ri.1vwBaAZ/7yrcxNulcqEqs0Qq4YO0PzK/47o97in80u37E2","admin","all"),
+("Lauren","ebae",2020,"ltso","$2b$12$NlRSKN4mSlzQAM4WNaECg.8GssbK2vR5mKa1EDPQQ34jfEgR7Rw4C","admin","all"), ("Tam","Briese",2019,"tdeshong"," $2b$12$u36cGqjFEp0PNnnn2xeIjubg2VL8HEqiUzd6YB842lZ86623XgqfS","admin","all");
 insert into industry(pid,iname) values ("ltso","Health Professions"), ("tdeshong","Technology and Engineering");
 insert into events(ename,city,state,country,description,edate,approved,rsvps,pid) values("Millyfest","Wellesley","MA","US","tourney","2018-11-12",1,0,"ltso");
 insert into team(tname,`type`,nearestcity,state,country,pid) values ("Brute Squad","club","Boston","MA","US","tdeshong"), ("Nightlock","league","SF","CA","US","ltso");

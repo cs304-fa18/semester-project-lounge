@@ -42,12 +42,12 @@ def search():
 
 @app.route("/profile", methods=["GET", "POST"])
 def profile(username): #need to get a username from somewhere
-    user=seach_db.preference(username)
-    indus=search_db.preference(username)
-    if user['sprefs']=='all:
+    user= seach_db.preference(username)
+    indus= search_db.preference(username)
+    if user['sprefs']=='all':
         return render_template('preference.html', user=user, indus=indus)
     else:
-        return rendr_template('preference_base.html', user=user)
+        return render_template('preference_base.html', user=user)
     
     
     
