@@ -18,7 +18,7 @@ create table user(
     phnum varchar(10),
     classyear varchar(4),
     username varchar(20) not NULL,
-    password varchar(30) not NULL,
+    password varchar(100) not NULL,
     user_type enum("regular","admin") default "regular",
     sprefs enum("all", "class", "overlap", "admin") not NULL,
     primary key(username)

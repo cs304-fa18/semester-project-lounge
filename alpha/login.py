@@ -2,19 +2,21 @@ import sys
 import MySQLdb
 
 def findUser(curs, username):
-    curs.execute('''select * from user where username = %s''', [username,])
+    curs.execute('''select username from user where username = %s''', [username,])
     return curs.fetchone()
 
-def getUserType(curs, username):
-    curs.execute('''select user_type from user where username = %s''', [username,])
+def insertUser(curs, email, username, password, sprefs):
+    curs.execute('''insert into user(email, username, password, user_type, sprefs) values 
+                    (%s, %s, %s, "regular", %s)''', [email, username, password, sprefs,])
+
+def updateUser(curs, username, name, nickname, phnum, classyear):
+    curs.execute('''update user set name=%s, nickname=%s, phnum=%s, classyear=%s where
+                    username=%s''', [name, nickname, phnum, classyear, username,])
+
+def getPassword(curs, username):
+    curs.execute('select * from user where username = %s', [username,])
     return curs.fetchone()
-
-def insertUser(curs, name, email, username, password, nickname, phnum, classyear, sprefs):
-    return curs.execute('''insert into user(name, email, username, password,
-             nickname, phnum, classyear, user_type, sprefs) values 
-             (%s, %s, %s, %s, %s, %s, %s, "regular", %s)''', [name, email, username, password, nickname, phnum,
-             classyear, sprefs,])
-
+                    
 def insertIndustry(curs, username, industry):
     return curs.execute('''insert into industry(pid, iname) values (%s, %s)''', [username, industry,])
 
