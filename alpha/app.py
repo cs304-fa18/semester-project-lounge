@@ -9,11 +9,15 @@ lock = Lock()
 
 @app.route('/')
 def index():
+    uid = session.get('uid', '')
+    session['uid'] = uid
+    curs = conn.getConn()
+    session['utype'] = login.getUserType(curs, uid)
     return render_template('index.html')
 
 @app.route('/admin/')
 def adminBoard():
-    if session.get('uid') == None:
+    if session.get('uid') == '':
         flash("Need to log in")
         return render_template('index.html')
     else:
@@ -113,7 +117,7 @@ def newAccount():
 # Sets the user of the session
 @app.route('/setUID/', methods=['POST'])
 def setUID():
-    uid = request.form.get('uid')
+    uid = request.form.get('uid', '')
     session['uid'] = uid
     curs = conn.getConn()
     session['utype'] = login.getUserType(curs, uid)
@@ -122,7 +126,7 @@ def setUID():
 
 @app.route('/approved/')
 def viewApproved():
-    if session.get('uid') == None:
+    if session.get('uid') == '':
         flash("Need to log in")
         return render_template('index.html')
     else:
@@ -159,7 +163,7 @@ def moreEvent():
 
 @app.route('/submitted/')
 def viewSubmitted():
-    if session.get('uid') == None:
+    if session.get('uid') == '':
         flash("Need to log in")
         return render_template('index.html')
     else:
@@ -182,7 +186,7 @@ def createEvent():
 
 @app.route('/submitEvent/', methods=['POST'])
 def submitEvent():
-    if session.get('uid') == None:
+    if session.get('uid') == '':
         flash("Need to log in")
         return render_template('index.html')
     else:
@@ -264,7 +268,7 @@ def findRSVPsAjax():
 @app.route('/messages/')
 def messaging():
     """Returns html page with necessary data to populate messaging page."""
-    if session.get('uid') == None:
+    if session.get('uid') == '':
         flash("Need to log in")
         return render_template('index.html')
     else:
@@ -309,7 +313,7 @@ def messagePerson():
 @app.route('/donate/')
 def makeDonation():
     """Returns html page populated with donation form"""
-    if session.get('uid') == None:
+    if session.get('uid') == '':
         flash("Need to log in")
         return render_template('index.html')
     else:
@@ -318,7 +322,7 @@ def makeDonation():
 @app.route('/submitDonation/', methods=['POST'])
 def submitDonation():
     """Submits donation by inserting the data into the donation table"""
-    if session.get('uid') == None:
+    if session.get('uid') == '':
         flash("Need to log in")
         return render_template('index.html')
     else:
@@ -351,7 +355,7 @@ def submitDonation():
 @app.route('/viewDonations/')
 def viewDonations():
     """Returns html page populated with data of all submitted donations"""
-    if session.get('uid') == None:
+    if session.get('uid') == '':
         flash("Need to log in")
         return render_template('index.html')
     else: 
@@ -379,7 +383,7 @@ def markSeen():
 @app.route('/feedback/')
 def giveFeedback():
     """Return html page with feedback form"""
-    if session.get('uid') == None:
+    if session.get('uid') == '':
         flash("Need to log in")
         return render_template('index.html')
     else: 
@@ -416,7 +420,7 @@ def submitFeedback():
 @app.route('/viewFeedback/')
 def viewFeedback():
     """Return all submitted feedback in html page"""
-    if session.get('uid') == None:
+    if session.get('uid') == '':
         flash("Need to log in")
         return render_template('index.html')
     else: 
