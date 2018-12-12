@@ -1,8 +1,11 @@
 from flask import (Flask, url_for, flash, render_template, request, redirect, session, jsonify)
+from datetime import date, datetime
+from threading import Thread, Lock
 import events, messages, family, login, donations, feedback, conn
 
 app = Flask(__name__)
 app.secret_key = "notverysecret"
+lock = Lock()
 
 @app.route('/')
 def index():
@@ -140,9 +143,12 @@ def listEvent(eid):
     date = new_id[1]
     event = events.getEvent(curs, name, date)
     past = False
+    approved = False
     if event in events.getPastEvents(curs, 1):
         past = True
-    return render_template('event.html', event = event, past=past)
+    if event in events.getEvents(curs, 1):
+        approved = True
+    return render_template('event.html', event = event, past=past, approved=approved)
     
 @app.route('/moreEvent/', methods=['POST'])
 def moreEvent():
@@ -191,23 +197,23 @@ def submitEvent():
         if name == '':
             flash("Missing input: Event's name is missing")
             error = True
-        
-        checkdate = "".join(request.form.get('date').split("-"))
-        if not checkdate or not checkdate.isdigit():
+
+        if not date or type(date) is not datetime.date:
             error = True
-            if not checkdate:
+            if not date:
                 flash("Missing input: Event's date is missing")
             else:
                 flash("Date is not numeric")
         
         if not error:
             curs = conn.getConn()
+            lock.acquire()
             if events.checkEvent(curs, name, date):
                 flash("Event {} at {} exists".format(name, date))
             else:
                 events.submitEvent(curs, name, city, state, country, desc, date, session['uid'])
                 flash("Event {} submitted for approval by admins".format(name))
-            
+            lock.release()
         return redirect(url_for('createEvent'))
 
 @app.route('/approveDeleteEvent/', methods=['POST'])
@@ -434,8 +440,8 @@ def getFamily(searchterm):
         flash("Need to log in")
         return render_template('index.html') # Go to a temporary login 
     else:
-        conn = conn.getConn()
-        families = family.getFamily(conn, searchterm)
+        curs = conn.getConn()
+        families = family.getFamily(curs, searchterm)
         names_all = [fam['name'] for fam in families]
         names = list(set(names_all))
         return render_template('family.html', families=families, names=names)

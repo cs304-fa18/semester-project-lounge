@@ -4,19 +4,14 @@
 {% extends "index.html" %}
 {% block content %}
 
-<!doctype html>
-<html lang="en">
-<head>
-    <title>Events</title>
-    <!--<link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">-->
-    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
-    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
-    <script>
+<!--<link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">-->
+<script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+<script>
     $( function() {
         $("#tabs").tabs();
     } );
-    </script>
-</head>
+</script>
 
 <body>
 
@@ -41,13 +36,21 @@
                     <div class="location"><img src="/static/location.png" style="max-width:15%"> {{event.city}}, {{event.state}} {{event.country}}</div>
                     <div class="rsvp">RSVPs: {{event.rsvps}}</div>
                     <div class="more">
-                        <form method="post" action="/moreEvent/">
+                        <form method="post" action="{{url_for('moreEvent')}}">
                             <input type="hidden" name="name" value="{{event.ename}}">
                             <input type="hidden" name="date" value="{{event.edate}}">
                             <input type="submit" name="submit" value="More Info!">
                         </form>
                     </div>
                 </div>
+                {% if approve %}
+                <div class="approve"><form method="post" action="{{url_for('approveDeleteEvent')}}">
+                <input type="hidden" name="name" value="{{event.ename}}">
+                <input type="hidden" name="date" value="{{event.edate}}">
+                <input type="submit" name="submit" value="Approve!">
+                <input type="submit" name="submit" value="Delete!">
+                </form></div>
+            {% endif %}
             </div>
         {% endfor %}
         </div>

@@ -15,7 +15,7 @@
     <div class="rsvp">
         RSVPs: <div class="num" style="display: inline-block;">{{event.rsvps}}</div>
         <input type="submit" name="submit" value="See All">
-        {% if past==False %}
+        {% if past==False and approve==True%}
         <form method="post" action="{{url_for('rsvpEvent')}}">
             <input type="hidden" name="name" value="{{event.ename}}">
             <input type="hidden" name="date" value="{{event.edate}}">

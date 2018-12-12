@@ -24,4 +24,3 @@ def findFamily(curs, name):
                     or family.member = user.username
                     where user.name like %s''', (key,))
     return curs.fetchall()
-    

@@ -31,7 +31,7 @@ def checkEvent(curs, name, date):
 def submitEvent(curs, name, city, state, country, desc, date, uname):
     '''inserts event with all accompanying data into the events table'''
     curs.execute('''insert into events(ename, city, state, country, description, edate, approved, pid) 
-                    values(%s, %s, %s, %s, %s, %s, 0, %s)''', (name, city, state, country, desc, date, uname,))
+                    values(%s, %s, %s, %s, %s, %s, 0, %s) ''', (name, city, state, country, desc, date, uname,))
                     
 def approveEvent(curs, name, date):
     '''set event with given name and date as approved -- for admins'''
