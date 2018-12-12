@@ -9,14 +9,14 @@
     <div id="cover-photo">
         <img src="/static/event.png" style="max-width:100%">
     </div>
-    <div class = "name">{{event.ename}}</div>
+    <div class="name">{{event.ename}}</div>
     <div class="date"><img src="/static/calendar.png" style="max-width:8%"> {{event.edate}}</div>
     <div class="location"><img src="/static/location.png" style="max-width:8%"> {{event.city}}, {{event.state}} {{event.country}}</div>
     <div class="rsvp">
         RSVPs: <div class="num" style="display: inline-block;">{{event.rsvps}}</div>
         <input type="submit" name="submit" value="See All">
         {% if past==False %}
-        <form method="post" action="/rsvpEvent/">
+        <form method="post" action="{{url_for('rsvpEvent')}}">
             <input type="hidden" name="name" value="{{event.ename}}">
             <input type="hidden" name="date" value="{{event.edate}}">
             <input type="submit" id="submit" name="submit" value="RSVP">
@@ -39,6 +39,7 @@
     $("#progressive_enhancement").on('click', function () {
         if(progressive_on) {
           // turn it off
+          $(".rsvpajax").hide()
           $("input[value=RSVP]").show(); 
           $("#progressive_enhancement").text('Turn on Progressive Enhancement'); // change text of button
            progressive_on = false; 

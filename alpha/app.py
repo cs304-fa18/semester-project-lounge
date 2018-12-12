@@ -8,7 +8,7 @@ app.secret_key = "notverysecret"
 def index():
     return render_template('index.html')
 
-@app.route('/admin')
+@app.route('/admin/')
 def adminBoard():
     if session.get('uid') == None:
         flash("Need to log in")
@@ -123,24 +123,24 @@ def viewApproved():
         flash("Need to log in")
         return render_template('index.html')
     else:
-        conn = conn.getConn()
-        up_events = events.getEvents(conn, 1)
+        curs = conn.getConn()
+        up_events = events.getEvents(curs, 1)
         up_id = [event['ename'].replace(' ', '') for event in up_events]
         up = [(up_events[i], up_id[i]) for i in range(len(up_events))]
-        past_events = events.getPastEvents(conn, 1)
+        past_events = events.getPastEvents(curs, 1)
         past_id = [event['ename'].replace(' ', '') for event in past_events]
         past = [(past_events[i], past_id[i]) for i in range(len(past_events))]
         return render_template('events.html', up=up, past=past, submit = 'yes')
 
 @app.route('/events/<eid>', methods=['GET'])
 def listEvent(eid):
-    conn = conn.getConn()
+    curs = conn.getConn()
     new_id = eid.split('_')
     name = new_id[0]
     date = new_id[1]
-    event = events.getEvent(conn, name, date)
+    event = events.getEvent(curs, name, date)
     past = False
-    if event in events.getPastEvents(conn, 1):
+    if event in events.getPastEvents(curs, 1):
         past = True
     return render_template('event.html', event = event, past=past)
     
@@ -161,11 +161,11 @@ def viewSubmitted():
             flash('Not accessible for regular users')
             return redirect(url_for('viewApproved'))
         else:
-            conn = conn.getConn()
-            up_events = events.getEvents(conn, 0)
+            curs = conn.getConn()
+            up_events = events.getEvents(curs, 0)
             up_id = [event['ename'].replace(' ', '') for event in up_events]
             up = [(up_events[i], up_id[i]) for i in range(len(up_events))]
-            past_events = events.getPastEvents(conn, 0)
+            past_events = events.getPastEvents(curs, 0)
             past_id = [event['ename'].replace(' ', '') for event in past_events]
             past = [(past_events[i], past_id[i]) for i in range(len(past_events))]
             return render_template('events.html', up=up, past=past, approve = "yes")
@@ -232,7 +232,7 @@ def rsvpEvent():
     curs = conn.getConn()
     name = request.form.get('name')
     date = request.form.get('date')
-    events.updateRSVP(conn, name, date, session['uid'])
+    events.updateRSVP(curs, name, date, session['uid'])
     flash("RSVPS for event {} increased by one".format(name))
     return redirect(request.referrer)
     
@@ -242,16 +242,16 @@ def rsvpEventAjax():
     name = request.form.get('name')
     eid = name.replace(' ', '')
     date = request.form.get('date')
-    events.updateRSVP(conn, name, date, session['uid'])
-    rsvp = events.getRSVP(conn, name, date)
+    events.updateRSVP(curs, name, date, session['uid'])
+    rsvp = events.getRSVP(curs, name, date)
     return jsonify({'rsvp': rsvp['rsvps'], 'name': name, 'date': date, 'eid': eid})
 
 @app.route('/findRSVPsAjax/', methods=['POST'])
 def findRSVPsAjax():
-    conn = conn.getConn()
+    curs = conn.getConn()
     name = request.form.get('name')
     date = request.form.get('date')
-    rsvps = events.getPeople(conn, name, date)
+    rsvps = events.getPeople(curs, name, date)
     str_rsvps = [rsvp['name'] for rsvp in rsvps]
     return jsonify({'rsvps': str_rsvps})
 

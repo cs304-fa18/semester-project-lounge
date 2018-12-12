@@ -2,7 +2,8 @@
 {% block content %}
 
 <div id = create-event>
-<form action="/submitEvent/" method="POST">
+   
+<form action="{{url_for('submitEvent')}}" method="POST">
     <fieldset>
         <legend>Event Data</legend>
         <table>
