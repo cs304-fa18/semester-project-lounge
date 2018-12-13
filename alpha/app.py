@@ -494,7 +494,7 @@ def getProfile(username):
         return render_template('index.html')
         
     curs = conn.getConn()
-    if len(profiles.checkPerson(curs, username)) == 0:
+    if profiles.checkPerson(curs, username) is None:
         return render_template('search.html', dne=1)
     
     #Get all the user's info
@@ -506,7 +506,7 @@ def getProfile(username):
     #Check user's security preferences and whether person viewing profiles matches prefs
     prefs = profiles.getSecurityPrefs(curs, username)['sprefs']
 
-    if session['utype']['user_type'] == 'admin': #Admins can always view all info
+    if session.get('utype') == 'admin': #Admins can always view all info
         permiss =1 
     elif prefs == "all":
         permiss = 1
