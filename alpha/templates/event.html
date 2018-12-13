@@ -1,9 +1,17 @@
 {% extends "index.html" %}
 {% block content %}
 
+<script>
+    function goBack() {
+      window.history.back()
+    }
+</script>
+
 <div id = "progressive" align="center">
     <p>This button turns on/off all the JavaScript: <button id="progressive_enhancement">Turn On Progressive Enhancement</button>
 </div>
+
+<div id="back" align="center"><button onclick="goBack()">Go Back</button></div>
 
 <div id = "event" align="center" style="margin: 0 auto; background-color: white; height: 250px; width: 20%;">
     <div id="cover-photo">

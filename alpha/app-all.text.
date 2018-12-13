@@ -1,0 +1,2066 @@
+from flask import (Flask, url_for, flash, render_template, request, redirect, session, jsonify)
+from datetime import date, datetime
+from threading import Thread, Lock
+import events, messages, family, login, donations, feedback, conn, profiles, search
+from werkzeug import secure_filename
+import bcrypt
+
+app = Flask(__name__)
+app.secret_key = "notverysecret"
+lock = Lock()
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/admin/')
+def adminBoard():
+    if session.get('uid') == None:
+        flash("Need to log in")
+        return redirect(url_for('index'))
+    if session.get('utype') == 'regular':
+        flash('Need admin privileges')
+        return redirect(url_for('index'))
+    else:
+        return render_template('admin.html')
+
+@app.route('/account/', methods=['GET', 'POST'])
+def account():
+    return render_template('userinfo.html')
+
+@app.route('/createAccount/', methods=['GET', 'POST'])
+def newAccount():
+    if request.method == 'GET':
+        return redirect(url_for('account'))
+    if request.method == 'POST':
+        error = False
+        email = request.form.get("email", '')
+        uname = request.form.get("username", '')
+        pwd1 = request.form.get("password1", '')
+        pwd2 = request.form.get("password2", '')
+        sprefs = request.form.get("sprefs", '')
+
+        if uname == '':
+            error = True
+            flash("Missing input: Username is missing")
+        if pwd1 == '' or pwd2 == '':
+            error = True
+            flash("Missing input: One or both of the password fields are incomplete")
+        if pwd1 != pwd2:
+            error = True
+            flash("Passwords do not match")    
+        if "@" not in email:
+            error = True
+            flash("Invalid email address")
+        if sprefs == '':
+            error = True
+            flash("Missing input: Security preferences missing")
+        
+        if error:
+             return redirect(request.referrer)
+
+        curs = conn.getConn()
+        hashed = bcrypt.hashpw(pwd1.encode('utf-8'), bcrypt.gensalt())
+        print('hased is ' + hashed)
+        if login.findUser(curs, uname) is not None:
+            flash('That username is taken')
+            return redirect(url_for('index'))
+        login.insertUser(curs, email, uname, hashed, sprefs)
+        return redirect(url_for('index'))
+            
+@app.route('/login/', methods=['POST'])
+def loginuser():
+    try:
+        username = request.form.get('uid')
+        passwd = request.form.get('pwd')
+        curs = conn.getConn()
+        row = login.getPassword(curs, username)
+        if row is None:
+            # Same response as wrong password, so no information about what went wrong
+            flash('login incorrect. Try again or join')
+            return redirect( url_for('index'))
+        hashed = row['password']
+        utype = row['user_type']
+        # strings always come out of the database as unicode objects
+        if bcrypt.hashpw(passwd.encode('utf-8'),hashed.encode('utf-8')) == hashed:
+            flash('successfully logged in as '+ username)
+            session['username'] = username
+            session['logged_in'] = True
+            session['visits'] = 1
+            session['utype'] = utype
+            return redirect(url_for('index'))
+        else:
+            flash('login incorrect. Try again or join')
+            return redirect(url_for('index'))
+    except Exception as err:
+        flash('form submission error '+ str(err))
+        return redirect( url_for('index') )
+
+@app.route('/logout/', methods=['POST'])
+def logout():
+    try:
+        if 'username' in session:
+            username = session['username']
+            session.pop('username')
+            session.pop('logged_in')
+            flash('{} is logged out'.format(username))
+            return redirect(url_for('index'))
+        else:
+            flash('you are not logged in. Please login or join')
+            return redirect( url_for('index') )
+    except Exception as err:
+        flash('some kind of error '+str(err))
+        return redirect( url_for('index') )
+
+@app.route('/completeProfile/', methods=['GET', 'POST'])
+def completeProfile():
+    return render_template('moreinfo.html')
+
+@app.route('/updateProfile/', methods=['POST'])
+def updateProfile():
+    if session.get('uid') == None:
+        flash("Need to log in")
+        return render_template('index.html')
+    else:
+        uname = session.get('uid')
+        name = request.form.get("name", '')
+        nname = request.form.get("nickname", '')
+        year = request.form.get("year", '')
+        phnum = request.form.get("phnum", '')
+        industry = request.form.get("ind", '')
+        fname = request.form.get("fname", '')
+        ances = request.form.get("ancestor", '')
+        team = request.form.get("team", '')
+        ttype = request.form.get("t", '')
+        ncity = request.form.get("tcity", '')
+        state = request.form.get("tstate", '')
+        country = request.form.get("tcountry", '')
+        
+        error = False
+        if name == '':
+            error = True
+            flash("Missing input: Name is missing")
+        if not year.isdigit():
+            error = True
+            flash("Invalid class year")
+        
+        if not error:
+            curs = conn.getConn()
+            login.updateUser(curs, uname, name, nname, phnum, year)
+                    
+            if industry != '':
+                login.insertIndustry(curs, uname, industry)
+            if fname != '':
+                login.insertFamily(curs, uname, fname, ances)
+            if team != '':
+                login.insertTeam(curs, uname, team, ttype, ncity, state, country)
+            flash('updated profile!')
+            return redirect(url_for('index'))
+        else:
+            return redirect(request.referrer)
+
+@app.route('/approved/')
+def viewApproved():
+    if session.get('uid') == None:
+        flash("Need to log in")
+        return render_template('index.html')
+    else:
+        curs = conn.getConn()
+        up_events = events.getEvents(curs, 1)
+        up_id = [event['ename'].replace(' ', '') for event in up_events]
+        up = [(up_events[i], up_id[i]) for i in range(len(up_events))]
+        past_events = events.getPastEvents(curs, 1)
+        past_id = [event['ename'].replace(' ', '') for event in past_events]
+        past = [(past_events[i], past_id[i]) for i in range(len(past_events))]
+        return render_template('events.html', up=up, past=past, submit = 'yes')
+
+@app.route('/events/<eid>', methods=['GET'])
+def listEvent(eid):
+    curs = conn.getConn()
+    new_id = eid.split('_')
+    name = new_id[0]
+    date = new_id[1]
+    event = events.getEvent(curs, name, date)
+    past = False
+    approved = False
+    if event in events.getPastEvents(curs, 1):
+        past = True
+    if event in events.getEvents(curs, 1):
+        approved = True
+    return render_template('event.html', event = event, past=past, approved=approved)
+    
+@app.route('/moreEvent/', methods=['POST'])
+def moreEvent():
+    name = request.form.get('name')
+    date = request.form.get('date')
+    eid = str(name) + '_' + str(date)
+    return redirect(url_for('listEvent', eid=eid))
+
+@app.route('/submitted/')
+def viewSubmitted():
+    if session.get('uid') == None:
+        flash("Need to log in")
+        return render_template('index.html')
+    else:
+        if session.get('utype') == 'regular':
+            flash('Not accessible for regular users')
+            return redirect(url_for('viewApproved'))
+        else:
+            curs = conn.getConn()
+            up_events = events.getEvents(curs, 0)
+            up_id = [event['ename'].replace(' ', '') for event in up_events]
+            up = [(up_events[i], up_id[i]) for i in range(len(up_events))]
+            past_events = events.getPastEvents(curs, 0)
+            past_id = [event['ename'].replace(' ', '') for event in past_events]
+            past = [(past_events[i], past_id[i]) for i in range(len(past_events))]
+            return render_template('events.html', up=up, past=past, approve = "yes")
+            
+@app.route('/createEvent/', methods=['GET', 'POST'])
+def createEvent():
+    return render_template('createEvent.html')
+
+@app.route('/submitEvent/', methods=['POST'])
+def submitEvent():
+    if session.get('uid') == None:
+        flash("Need to log in")
+        return render_template('index.html')
+    else:
+        error = False
+        name = request.form.get('name')
+        city = request.form.get('city')
+        state = request.form.get('state')
+        country = request.form.get('country')
+        desc = request.form.get('desc')
+        date = request.form.get('date')
+        
+        if name == '':
+            flash("Missing input: Event's name is missing")
+            error = True
+
+        if not date or type(date) is not datetime.date:
+            error = True
+            if not date:
+                flash("Missing input: Event's date is missing")
+            else:
+                flash("Date is not numeric")
+        
+        if not error:
+            curs = conn.getConn()
+            lock.acquire()
+            if events.checkEvent(curs, name, date):
+                flash("Event {} at {} exists".format(name, date))
+            else:
+                events.submitEvent(curs, name, city, state, country, desc, date, session['uid'])
+                flash("Event {} submitted for approval by admins".format(name))
+            lock.release()
+        return redirect(url_for('createEvent'))
+
+@app.route('/approveDeleteEvent/', methods=['POST'])
+def approveDeleteEvent():
+    curs = conn.getConn()
+    name = request.form.get('name')
+    date = request.form.get('date')
+    
+    if request.form.get('submit') == 'Approve!':
+        events.approveEvent(curs, name, date)
+        flash("Event {} approved".format(name))
+        return redirect(url_for('viewApproved'))
+        
+    if request.form.get('submit') == 'Delete!':
+        print(name, date)
+        events.deleteEvent(curs, name, date)
+        flash("Event {} deleted".format(name))
+        return redirect(url_for('viewSubmitted'))
+        
+@app.route('/rsvpEvent/', methods=['POST'])
+def rsvpEvent():
+    curs = conn.getConn()
+    name = request.form.get('name')
+    date = request.form.get('date')
+    events.updateRSVP(curs, name, date, session['uid'])
+    flash("RSVPS for event {} increased by one".format(name))
+    return redirect(request.referrer)
+    
+@app.route('/rsvpEventAjax/', methods=['POST'])
+def rsvpEventAjax():
+    curs = conn.getConn()
+    name = request.form.get('name')
+    eid = name.replace(' ', '')
+    date = request.form.get('date')
+    events.updateRSVP(curs, name, date, session['uid'])
+    rsvp = events.getRSVP(curs, name, date)
+    return jsonify({'rsvp': rsvp['rsvps'], 'name': name, 'date': date, 'eid': eid})
+
+@app.route('/findRSVPsAjax/', methods=['POST'])
+def findRSVPsAjax():
+    curs = conn.getConn()
+    name = request.form.get('name')
+    date = request.form.get('date')
+    rsvps = events.getPeople(curs, name, date)
+    str_rsvps = [rsvp['name'] for rsvp in rsvps]
+    return jsonify({'rsvps': str_rsvps})
+
+@app.route('/messages/')
+def messaging():
+    """Returns html page with necessary data to populate messaging page."""
+    if session.get('uid') == None:
+        flash("Need to log in")
+        return render_template('index.html')
+    else:
+        uid = session['uid']
+        curs = conn.getConn()
+        allMsgs = messages.getMessageHistory(curs, uid) # Get people user has messaged/received messages from
+        allK = list(allMsgs.keys())
+        mPreview = [messages.getLastM(curs,uid, allK[i]) for i in range(0,len(allK))]
+        num = [i for i in range(0,len(allMsgs))]
+        return render_template('messages.html', num=num, msgs=allMsgs, mKeys=allK, mPrev=mPreview)
+
+@app.route('/sendMsg/', methods=['POST'])
+def sendMsg():
+    """Sends a new message by inserting into the messaging table"""
+    curs = conn.getConn()
+    uid = session['uid']
+    receiver = request.form.get('receiver')
+    content = request.form.get('message')
+    messages.sendMessage(curs, uid, receiver, content)
+    return redirect(request.referrer)
+
+# Sends new message with Ajax
+@app.route('/sendMsgAjax/', methods=['POST'])
+def sendMsgAjax():
+    """Sends a message using Ajax updating"""
+    curs = conn.getConn()
+    uid = session['uid']
+    receiver = request.form.get('receiver')
+    content = request.form.get('message')
+    messages.sendMessage(curs, uid, receiver, content)
+    return jsonify(uid) #Could even return text
+
+@app.route('/personMs/')   
+def messagePerson():
+    """Returns all messages with a specific person"""
+    uid = session['uid']
+    person = request.args.get('person')
+    curs = conn.getConn()
+    msgs = messages.getMessages(curs, uid, person)
+    return jsonify(msgs)
+
+@app.route('/donate/')
+def makeDonation():
+    """Returns html page populated with donation form"""
+    if session.get('uid') == None:
+        flash("Need to log in")
+        return render_template('index.html')
+    else:
+        return render_template('donations.html')  
+
+@app.route('/submitDonation/', methods=['POST'])
+def submitDonation():
+    """Submits donation by inserting the data into the donation table"""
+    if session.get('uid') == None:
+        flash("Need to log in")
+        return render_template('index.html')
+    else:
+        error = False
+        uname = request.form.get('username')
+        item = request.form.get('item')
+        description = request.form.get('description')
+        
+        # Check to see all inputs have been filled out
+        if uname == '':
+            flash("Missing input: Please input your name")
+            error = True
+        
+        if item == None:
+            flash("Missing input: Please choose an item type")
+            error = True
+        
+        if description == '':
+            flash("Missing input: Please describe your item")
+            error = True
+            
+        if not error:
+            curs = conn.getConn()
+            donations.submitDonation(curs, uname, item, description)
+            name=donations.getName(curs,uname)
+            name=name['name']
+            return render_template('donationSuccess.html', name = name) 
+        return render_template('donations.html')
+
+@app.route('/viewDonations/')
+def viewDonations():
+    """Returns html page populated with data of all submitted donations"""
+    if session.get('uid') == None:
+        flash("Need to log in")
+        return render_template('index.html')
+    else: 
+        if session.get('utype') == 'regular': # Make sure user is an admin
+            flash('Not accessible for regular users')
+            return redirect(url_for('makeDonation'))
+        else:
+            curs = conn.getConn()
+            oldDonations = donations.getOldDonations(curs)
+            newDonations = donations.getNewDonations(curs)
+            return render_template('viewDonations.html', oldDonations=oldDonations, newDonations=newDonations)
+
+@app.route('/markDonation/', methods=['POST'])
+def markSeen():
+    """Mark all messages as seen or unseen by updating the seen column of the donation table."""
+    curs = conn.getConn()
+    uid = session['uid']
+    did = request.form.get('did')
+    seen = 0;
+    if request.form.get('submit') == "Mark as read":
+        seen = 1;
+    donations.mark(curs, did, seen)
+    return redirect(url_for('viewDonations'))
+
+@app.route('/feedback/')
+def giveFeedback():
+    """Return html page with feedback form"""
+    if session.get('uid') == None:
+        flash("Need to log in")
+        return render_template('index.html')
+    else: 
+        return render_template('feedback.html') 
+
+@app.route('/submitFeedback/', methods=['POST'])
+def submitFeedback():
+    """Submit feedback by inserting feedback data into feedback table."""
+    error = False
+    uname = request.form.get('username')
+    date = request.form.get('date')
+    subject = request.form.get('subject')
+    message = request.form.get('message')  
+        
+    if message == '':
+        flash("Missing input: Message is required")
+        error = True
+        
+    if date != '':
+        checkdate = "".join(request.form.get('date').split("-"))
+        if not checkdate.isdigit():
+            error = True
+            flash("Date is not numeric")
+       
+    if uname == "": # PID in table must be specified or assigned NULL
+        uname = None
+            
+    if not error:
+        curs = conn.getConn()
+        feedback.submitFeedback(curs, uname, date, subject, message)
+        flash("Thanks for the feedback! Our admins will be in touch soon to follow up if necessary.")
+    return render_template('feedback.html')
+
+@app.route('/viewFeedback/')
+def viewFeedback():
+    """Return all submitted feedback in html page"""
+    if session.get('uid') == None:
+        flash("Need to log in")
+        return render_template('index.html')
+    else: 
+        if session.get('utype') == 'regular': # Make sure user is an admin
+            flash('Not accessible for regular users')
+            return redirect(url_for('makeDonation'))
+        else:
+            curs = conn.getConn()
+            fback = feedback.viewFeedback(curs)
+            return render_template('viewFeedback.html', feedback=fback)
+
+@app.route('/familySearch/', methods=['POST'])
+def redirect_url():
+    searchterm = request.form.get('searchterm') # take in searched search term
+    return redirect(url_for('getFamily', searchterm=searchterm)) # redirect to movie page with movies matching search
+
+@app.route('/family/', defaults={'searchterm':''}) # defaults to showing all families
+@app.route('/family/<searchterm>/', methods=['GET'])
+def getFamily(searchterm):
+    if session.get('uid') == None:# Not logged in yet
+        flash("Need to log in")
+        return render_template('index.html') # Go to a temporary login 
+    else:
+        curs = conn.getConn()
+        families = family.getFamily(curs, searchterm)
+        names_all = [fam['name'] for fam in families]
+        names = list(set(names_all))
+        return render_template('family.html', families=families, names=names)
+        
+@app.route('/profile/<username>/', methods=['GET'])
+def getProfile(username):
+    """Retrieves the profile of the given user and ensures security preferences are respected"""
+    currentU = session.get('uid')
+    if currentU == None:
+        flash("Need to log in")
+        return render_template('index.html')
+        
+    curs = conn.getConn()
+
+    # check = profiles.checkPerson(curs, username)
+    # if len(check) == 0:
+    #     return render_template('search.html', dne=1)
+
+    #Get all the user's info
+    basic = profiles.getBasicInfo(curs, username)
+    industry = profiles.getIndustry(curs, username)
+    team = profiles.getTeam(curs, username)
+    contact = profiles.getContactInfo(curs, username)
+    
+    #Check user's security preferences and whether person viewing profiles matches prefs
+    prefs = profiles.getSecurityPrefs(curs, username)['sprefs']
+
+    if session.get('utype') == 'admin': #Admins can always view all info
+        permiss =1 
+    elif prefs == "all":
+        permiss = 1
+    elif prefs == "class":
+        if profiles.getYear(curs, username) == profiles.getYear(curs, currentU):
+            print "same class"
+            permiss = 1
+    elif prefs == "overlap":
+        if profiles.getOverlap(curs, username, currentU) == 1:
+            permiss = 1
+    
+    try: # Determine how much to show on html page
+        permiss
+        return render_template('profile.html', basic=basic, industry=industry, team=team, 
+                                contact=contact, permiss=permiss)
+    except NameError:
+        npermiss = 1
+        return render_template('profile.html', basic=basic, industry=industry, team=team, 
+                                contact=contact, npermiss=npermiss)
+
+@app.route("/search", methods=["GET", "POST"])
+def searchPerson():
+    if session.get('uid') == None:# Not logged in yet
+        flash("Need to log in")
+        return render_template('index.html') # Go to a temporary login 
+    if request.method == 'GET':
+        return render_template('search.html')
+    else:
+        name = request.form.get("name")
+        year= request.form.get("year")
+        indust = request.form.get("Industry")
+        
+        if all([name=="", year=="", indust==""]):
+            flash("enter something to filter your search by")
+            return render_template('search.html')
+
+                
+        searchItems = []
+        if name!="":
+            searchItems.append(["name", "%"+name+"%"])
+        if year !="" and year.isdigit():
+            searchItems.append(["classyear","%"+year+"%" ])
+        if indust !="":
+            searchItems.append(["iname","%"+indust+"%" ])
+        
+        transpose = zip(*searchItems)
+        
+        curs = conn.getConn()
+        table = search.search(curs, transpose)
+        
+        return render_template('search.html', table=table)
+
+if __name__ == '__main__':
+    app.debug = True
+    app.run('0.0.0.0',8080)
+
+# Riann Tang
+
+import sys
+import MySQLdb
+import cs304auth
+
+def getConn():
+    conn =  MySQLdb.connect(host='localhost',
+                           user='ltso',
+                           passwd='',
+                           db='lounge_db')
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    conn.autocommit(True)
+    return curs
+    
+import os, re
+import MySQLdb
+ 
+def file_contents(filename):
+    with open(filename,'r') as f:
+        return f.read()
+ 
+def getpass(filename='~/mysql-passwd'):
+    '''returns the contents of the given file as a string.
+     
+You can store your MySQL password in there, separate from your source code'''
+    return file_contents(os.path.expanduser(filename))
+     
+# ==========================================================================================
+# Reading a file formatted like ~/.my.cnf
+ 
+def read_cnf_core(cnf_file=None):
+    '''Read a file formatted like ~/.my.cnf file; defaulting to that
+    file. Return a dictionary with the necessary information to connect to
+    a database. This function is an internal function. Consider using read_cnf(),
+    which caches the results.'''
+    if cnf_file is None:
+        cnf_file = os.path.expanduser('~/.my.cnf')
+    else:
+        cnf_file = os.path.expanduser(cnf_file)
+    cnf = file_contents(cnf_file)
+    credentials = {}
+    # the key is the name used in the CNF file;
+    # the value is the name used in the MySQLdb.connect() function
+    mapping = {'host':'host',
+               'user':'user',
+               'password':'passwd',
+               'database':'db'}
+    for key in ('host', 'user', 'password', 'database' ):
+        cred_key = mapping[key]
+        # using \w* permits empty passwords and such
+        # this regex is not perfect. It doesn't allow embedded spaces, for example.
+        regex = r"\b{k}\s*=\s*[\'\"]?(\w*)[\'\"]?".format(k=key)
+        # print 'regex',regex
+        p = re.compile(regex)
+        m = p.search(cnf)
+        if m:
+            credentials[ cred_key ] = m.group(1)
+        elif key == 'host' or key == 'database':
+            credentials[ cred_key ] = 'not specified in ' + cnf_file
+        else:
+            raise Exception('Could not find key {k} in {f}'
+                            .format(k=key,f=cnf_file))
+    checkDSN(credentials)
+    return credentials
+ 
+def checkDSN(dsn):
+    '''Raises a comprehensible error message if the DSN is missing some necessary info'''
+    for key in ('host', 'user', 'passwd', 'db' ):
+        if not key in dsn:
+            raise KeyError('''DSN lacks necessary '{k}' key'''.format(k=key))
+    return True
+     
+CNF = None
+ 
+def read_cnf(cnf_file="~/.my.cnf"):
+    global CNF
+    if CNF is not None:
+        return CNF
+    CNF = read_cnf_core(cnf_file)
+    return CNF
+     
+# ==========================================================================================
+ 
+def mysqlConnectC9(db=None):
+    CNF = {'host': 'localhost', 'user': 'ubuntu', 'passwd':''}
+    if db is not None:
+        CNF['db'] = db
+    conn = MySQLdb.connect(**CNF)
+    conn.autocommit(True)
+    return conn
+ 
+def mysqlConnectPasswd(db=None,filename="~/mysql-passwd"):
+    passwd = file_contents(filename)
+    CNF = {'host': 'localhost', 'user': 'ubuntu', 'passwd':passwd}
+    if db is not None:
+        CNF['db'] = db
+    conn = MySQLdb.connect(**CNF)
+    conn.autocommit(True)
+    return conn
+ 
+def mysqlConnectCNF(db=None,filename="~/.my.cnf"):
+    CNF = read_cnf(filename)
+    if db is not None:
+        CNF['db'] = db
+    conn = MySQLdb.connect(**CNF)
+    conn.autocommit(True)
+    return conn
+ 
+# ==========================================================================================
+ 
+if __name__ == '__main__':
+    print 'starting test code, demonstrating how to use the CNF version'
+    import sys
+    if len(sys.argv) < 2:
+        print('''Usage: {cmd} cnf_file
+test dbconn by giving the name of a cnf_file on the command line'''
+              .format(cmd=sys.argv[0]))
+        sys.exit(1)
+    cnf_file = sys.argv[1]
+    c = mysqlConnectCNF(db='wmdb',filename=cnf_file)
+    print('successfully connected')
+    curs = c.cursor(MySQLdb.cursors.DictCursor) # results as Dictionaries
+    curs.execute('select user() as user, database() as db')
+    row = curs.fetchone()
+    print('connected to {db} as {user}'
+          .format(db=row['db'],user=row['user']))
+    curs.execute('select nm,name,birthdate from person limit 3')
+    print('first three people')
+    for row in curs.fetchall():
+        print row
+    curs.execute('select nm,name,birthdate from person where name like %s',
+                 ['%george%'])
+    print('names like george')
+    for row in curs.fetchall():
+        print row
+# Riann Tang
+
+import sys
+import MySQLdb
+
+def submitDonation(curs, uname, item, description):
+    """Insert a new donation into the donation table"""
+    curs.execute('''insert into donation (pid, item, description) values (%s, %s, %s)''', 
+    (uname, item, description,))
+
+def getName(curs, uname):
+    """Return the name of given user"""
+    curs.execute('''select name from user where username=%s''',( uname,))
+    return curs.fetchone()
+
+def getOldDonations(curs):
+    """Return all donations marked as read"""
+    curs.execute('''select * from donation where seen=1''')
+    return curs.fetchall()
+
+def getNewDonations(curs):
+    """"Return all donations marked as unread"""
+    curs.execute('''select * from donation where seen=0''')
+    return curs.fetchall()
+
+def mark(curs, did, seen):
+    """Mark donations as either read or unread
+    
+    Arguments:
+    Seen -- A boolean represented as a bit set to either 0 or 1
+    """
+    curs.execute('''update donation set seen=%s where did =%s''', 
+    (seen, did,))
+# Lauren Tso
+
+import sys
+import MySQLdb
+
+# ================================================================
+
+def getEvent(curs, name, date):
+    '''returns the event matching the unique name and date given'''
+    curs.execute('''select * from events where ename = %s and edate = %s''', (name, date,))
+    return curs.fetchone()
+                           
+def getEvents(curs, approved):
+    '''returns all upcoming events that are or are not approved'''
+    curs.execute('''select * from events where approved = %s and edate >= current_timestamp()
+                    order by edate asc''', (approved,))
+    return curs.fetchall()
+    
+def getPastEvents(curs, approved):
+    '''returns all past events that are (1) or are not approved (0)'''
+    curs.execute('''select * from events where approved = %s and edate < current_timestamp()
+                    order by edate asc''', (approved,))
+    return curs.fetchall()
+    
+def checkEvent(curs, name, date):
+    '''returns true if event with same name and date already exists'''
+    curs.execute('''select count(*) as count from events where ename = %s and edate = %s''', (name, date,))
+    row = curs.fetchone()
+    return row['count'] > 0
+    
+def submitEvent(curs, name, city, state, country, desc, date, uname):
+    '''inserts event with all accompanying data into the events table'''
+    curs.execute('''insert into events(ename, city, state, country, description, edate, approved, pid) 
+                    values(%s, %s, %s, %s, %s, %s, 0, %s) ''', (name, city, state, country, desc, date, uname,))
+                    
+def approveEvent(curs, name, date):
+    '''set event with given name and date as approved -- for admins'''
+    curs.execute('''update events set approved = 1 where ename = %s and edate = %s''', (name, date,))
+
+def deleteEvent(curs, name, date):
+    '''delete event with given name and date -- for admins'''
+    curs.execute('''delete from events where ename = %s and edate = %s''', (name, date,))
+
+def updateRSVP(curs, name, date, uname):
+    '''update rsvps for the event with the given name and date for the user'''
+    curs.execute('''insert into rsvps(uname, ename, edate) values(%s, %s, %s)''', (uname, name, date,))
+    curs.execute('''update events set rsvps = rsvps + 1 where ename = %s and edate = %s''', (name, date,)) # need to inner join on rsvps
+
+def getRSVP(curs, name, date):
+    '''return number of rsvps for the event with the given name and date'''
+    curs.execute('''select rsvps from events where ename = %s and edate = %s''', (name, date,))
+    return curs.fetchone()
+    
+def getPeople(curs, name, date):
+    '''return people who have rsvpd to the event with the given name and date'''
+    curs.execute('''select name from user inner join rsvps on user.username = rsvps.uname 
+                    where ename = %s and edate = %s''', (name, date,))
+    return curs.fetchall()
+    
+# ================================================================
+
+# Lauren Tso
+
+import sys
+import MySQLdb
+
+# ================================================================
+
+def getFamily(curs, searchterm):
+    names_dict = findFamily(curs, searchterm)
+    names = [name['name'] for name in names_dict]
+    wildcard = tuple(names)
+    curs.execute('''select family.name, user.name as uname, user.classyear from family 
+                    inner join user on family.predecessor = user.username 
+                    or family.member = user.username having family.name in %s
+                    order by user.classyear''', (wildcard,))
+    return curs.fetchall()
+    
+
+# need to inner join to search user name instead of username
+def findFamily(curs, name):
+    key = '%' + name + '%' # format the wildcard for sql search
+    curs.execute('''select family.name, user.name from family inner join user on 
+                    family.predecessor = user.username 
+                    or family.member = user.username
+                    where user.name like %s''', (key,))
+    return curs.fetchall()# Riann Tang
+
+import sys
+import MySQLdb
+
+def submitFeedback(curs, uname, date, subject, message):
+    """Insert a new feedback into the feedback table"""
+    curs.execute('''insert into feedback (subject, message, edate, pid) values (%s, %s, %s, %s)''',
+    (subject, message, date, uname,))
+
+def viewFeedback(curs):
+    """Return all feedback"""
+    curs.execute('''select * from feedback''')
+    return curs.fetchall()import sys
+import MySQLdb
+
+def findUser(curs, username):
+    curs.execute('''select username from user where username = %s''', [username,])
+    return curs.fetchone()
+
+def insertUser(curs, email, username, password, sprefs):
+    curs.execute('''insert into user(email, username, password, user_type, sprefs) values 
+                    (%s, %s, %s, "regular", %s)''', [email, username, password, sprefs,])
+
+def updateUser(curs, username, name, nickname, phnum, classyear):
+    curs.execute('''update user set name=%s, nickname=%s, phnum=%s, classyear=%s where
+                    username=%s''', [name, nickname, phnum, classyear, username,])
+
+def getPassword(curs, username):
+    curs.execute('select * from user where username = %s', [username,])
+    return curs.fetchone()
+                    
+def insertIndustry(curs, username, industry):
+    return curs.execute('''insert into industry(pid, iname) values (%s, %s)''', [username, industry,])
+
+def insertFamily(curs, username, family, pred):
+    return curs.execute('''insert into family(member, name, predecessor) values (%s, %s, %s)''', [username, family, pred,])
+
+def insertTeam(curs, username, team, ttype, ncity, state, country):
+    return curs.execute('''insert into team(pid, tname, `type`, nearestcity, state, country) 
+                           values (%s, %s, %s, %s, %s, %s)''', [username, team, ttype, ncity, state, country,])
+# Riann Tang
+
+import sys
+import MySQLdb
+
+def getSenderHist(curs, user):
+    """Return the name of people user has messaged."""
+    curs.execute('''select receiver from messages where sender=%s''', (user,))
+    return curs.fetchall()
+
+def getReceiveHist(curs,user):
+    """Return the name of people user has recieved messages from."""
+    curs.execute('''select sender from messages where receiver=%s''', (user,))
+    return curs.fetchall()
+
+def getName(curs, user):
+    """Return the name of the given user."""
+    curs.execute('''select name from user where username=%s''', (user,))
+    return curs.fetchone()
+   
+def getMessageHistory(curs, user):
+    """Return all messages user has sent and recieved messages from"""
+    sendHist = getSenderHist(curs, user)
+    receiveHist=getReceiveHist(curs, user)
+    allMs = sendHist+receiveHist
+    distinctMs = []
+    for i in range (0, len(allMs)):
+        if allMs[i].has_key('receiver'):
+            if allMs[i]['receiver'] not in distinctMs:
+                distinctMs.append(allMs[i]['receiver'])
+        if allMs[i].has_key('sender'):
+            if allMs[i]['sender'] not in distinctMs:
+                distinctMs.append(allMs[i]['sender'])
+    mHist = {}
+    for i in range (0,len(distinctMs)):
+        name = getName(curs, distinctMs[i])
+        mHist[distinctMs[i]] = name['name']
+    return mHist
+
+def getLastM(curs, user1, user2):
+    """Return most recent message between two given users"""
+    curs.execute('''select message from messages where (sender=%s and receiver=%s) or 
+    (sender=%s and receiver=%s) order by mid desc limit 1''',(user1,user2,user2,user1,))
+    return curs.fetchone()
+
+def getMessages(curs, user1, user2):
+    """Return all messages between two given users"""
+    curs.execute('''select message, sender from messages where (sender=%s and receiver=%s) 
+    or (sender=%s and receiver=%s)''',(user1, user2, user2, user1,))
+    return curs.fetchall()
+
+def sendMessage(curs, sender, receiver, msg):
+    "Insert messages into messages table"
+    curs.execute('''insert into messages (sender, receiver, message) values 
+    (%s,%s,%s)''', (sender, receiver, msg,))
+    # Riann Tang
+import sys
+import MySQLdb
+
+# ================================================================
+
+def checkPerson(curs, uname):
+    curs.execute('''select * from user where username=%s''', (uname,))
+    return curs.fetchone
+    
+def getSecurityPrefs(curs, uname):
+    """Returns the security preferences of given user"""
+    curs.execute('''select sprefs from user where username=%s''', (uname, ))
+    return curs.fetchone()
+    
+def getBasicInfo(curs, uname):
+    """Return the name, nickname and classyear of given user"""
+    curs.execute('''select username, name, nickname, classyear from user where username=%s''', (uname, ))
+    return curs.fetchone()
+    
+def getIndustry(curs, uname):
+     """Return the industry type of the given user"""
+     curs.execute('''select iname from industry where pid=%s''', (uname, ))
+     return curs.fetchone()
+     
+def getTeam(curs, uname):
+    """Return the team name, type, city, state and country of given user"""
+    curs.execute('''select tname, nearestcity, state, country from team where pid=%s''', (uname, ))
+    return curs.fetchone()
+    
+def getContactInfo(curs, uname):
+    """Return the email and phone number of given user"""
+    curs.execute('''select email, phnum from user where username=%s''', (uname, ))
+    return curs.fetchone()
+
+def getYear(curs, uname):
+    """Return the classyear of given user"""
+    curs.execute('''select classyear from user where username=%s''', (uname, ))
+    return curs.fetchone()
+    
+def getOverlap(curs, uname1, uname2):
+    """Return 1 if there is an overlap in time at Wellesley, 0 if not"""
+    olap = 1
+    year1 = int(getYear(curs, uname1)['classyear'])
+    year2 = int(getYear(curs, uname2)['classyear'])
+    for i in range(4):
+        if (year1 + i) == year2:
+            olap = 1
+        if (year1 - i) == year2:
+            olap = 1
+    return olap# Riann Tang
+import sys
+import MySQLdb
+
+# ================================================================
+
+def search (curs, search_items):
+    compares = ' and '.join([ ' {col} like %s '.format(col=c) for c in search_items[0] ]) 
+    
+    if "iname" in compares:
+        curs.execute('''select user.name, user.nickname, user.classyear 
+                 from user inner join industry on username=pid
+                 where ''' + compares, search_items[1])
+    else:
+        curs.execute('''select name, nickname, classyear 
+                 from user where ''' + compares, search_items[1])
+    return curs.fetchall()
+    
+def preference(curs, username):
+    curs.execute('''select * from user where name = %s''',
+                  [username])
+    return curs.fetchone()
+
+
+<!--Riann Tang-->
+<!doctype html>
+{% extends "index.html" %}
+{% block content %}
+
+<html>
+  <body>
+    <h1>Admin Dashboard</h1>
+    <ul>
+      <li><a href={{ url_for('viewSubmitted') }}>Approve/Delete Events</a></li>
+      <li><a href={{ url_for('viewDonations') }}>View Donations</a></li>
+      <li><a href={{ url_for('viewFeedback') }}>View Feedback</a></li>
+    </ul>
+  </body>
+</html>
+
+{% endblock %}{% extends "index.html" %}
+{% block content %}
+
+<div id = create-event>
+   
+<form action="{{url_for('submitEvent')}}" method="POST">
+    <fieldset>
+        <legend>Event Data</legend>
+        <table>
+            <tr><td><label for="name" accesskey="n"> Event Name *:</label></td><td><input type="text" name="name" id="name" placeholder="Name"></td></tr>
+            <tr><td><label for="city" accesskey="c"> Event City:</label></td><td><input type="text" name="city" id="city" placeholder="City"></td></tr>
+            <tr><td><label for="state" accesskey="s"> Event State:</label></td><td><input type="text" name="state" id="state" placeholder="State"></td></tr>
+            <tr><td><label for="country" accesskey="o"> Event Country:</label></td><td><input type="text" name="country" id="country" placeholder="Country"></td></tr>
+            <tr><td><label for="desc" accesskey="d"> Event Description:</label></td><td><input type="text" name="desc" id="desc" placeholder="Description"></td></tr>
+            <tr><td><label for="date" accesskey="a"> Event Date *:</label></td><td><input type="text" name="date" id="date" placeholder="YYYY-MM-DD"></td></tr>
+        </table>
+    </fieldset>
+    <p>
+        <input type='submit' value='Submit Event'>
+    </p>
+</form>
+</div>
+
+{% endblock %}<!--Riann Tang-->
+<!doctype html>
+
+{% extends "index.html" %}
+{% block content %}
+<title>Donate</title>
+    <body>
+        <h1>Your donation was successfully submitted.</h1>
+        <p>Thank you {{ name }} for your generous contribution. With you help, we can continue
+        the inclusive tradition of the Whiptails community and tear down financial barriers to 
+        joining the team. Members of our team will be in touch 
+        with more details soon.</p>
+        <img src="/static/team.jpg" alt="Members of Whiptails 2018-2019" id="team-pic"></a>
+    </body>
+{% endblock %}
+<!--Riann Tang-->
+<!doctype html>
+
+{% extends "index.html" %}
+{% block content %}
+<title>Donate</title>
+    <body>
+        <h1>Donate to the Whiptails</h1>
+        <p>Thank you so much for your support of the Wellelsey Whiptails! If you
+        would like to donate gently used athletic gear such as uniforms or cleats, please fill out the form
+        below. Monetary donations should be done via the <a href="https://www.givecampus.com/campaigns/5218/donations/new"
+        target="_blank">official Wellesley giving page</a>. 
+        Just select the designation as "Other" and specify "Ultimate Frisbee".</p>
+        <p>Note: Required fields are denoted with a *</p>
+        <form name="donationsForm" action={{ url_for('submitDonation') }} method="POST">
+            <fieldset>
+                <legend>Make Donation</legend>
+                <table>
+                    <tr><td><label for="username">Username:* </label><input type="text" name="username" id="username" placeholder="Your username"></td></tr>
+                    <tr><td><label for="item">Item Type:* </label><select name="item">
+                        <option value="" disabled selected>Select item</option>
+                        <option value="cleats">Cleats</option>
+                        <option value="uniform">Uniform</option>
+                        <option value="other">Other</option>
+                      </select></td></tr>
+                    <tr><td><label for="description">Description:* </label><input type="text" name="description" id="description" placeholder="Specify size and other details"></td></tr>
+                </table>
+            </fieldset>
+            <p>
+                <input type='submit' value='Submit Donation' class="button">
+            </p>
+        </form>
+    </body>
+</html>
+{% endblock %}
+
+{% extends "index.html" %}
+{% block content %}
+
+<div id = "progressive" align="center">
+    <p>This button turns on/off all the JavaScript: <button id="progressive_enhancement">Turn On Progressive Enhancement</button>
+</div>
+
+<div id = "event" align="center" style="margin: 0 auto; background-color: white; height: 250px; width: 20%;">
+    <div id="cover-photo">
+        <img src="/static/event.png" style="max-width:100%">
+    </div>
+    <div class="name">{{event.ename}}</div>
+    <div class="date"><img src="/static/calendar.png" style="max-width:8%"> {{event.edate}}</div>
+    <div class="location"><img src="/static/location.png" style="max-width:8%"> {{event.city}}, {{event.state}} {{event.country}}</div>
+    <div class="rsvp">
+        RSVPs: <div class="num" style="display: inline-block;">{{event.rsvps}}</div>
+        <input type="submit" name="submit" value="See All">
+        {% if past==False and approve==True%}
+        <form method="post" action="{{url_for('rsvpEvent')}}">
+            <input type="hidden" name="name" value="{{event.ename}}">
+            <input type="hidden" name="date" value="{{event.edate}}">
+            <input type="submit" id="submit" name="submit" value="RSVP">
+        </form>
+        {% endif %}
+    </div>
+    <div class="rsvpajax">RSVP</div>
+    <div class="people">
+        <ul>
+        </ul>
+    </div>
+</div>
+    
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script>
+    $(".rsvpajax").hide()
+    
+    // toggle progressive enhancement on click
+    var progressive_on = false;
+    $("#progressive_enhancement").on('click', function () {
+        if(progressive_on) {
+          // turn it off
+          $(".rsvpajax").hide()
+          $("input[value=RSVP]").show(); 
+          $("#progressive_enhancement").text('Turn on Progressive Enhancement'); // change text of button
+           progressive_on = false; 
+        } 
+        else {
+          // turn it on
+          $("input[value=RSVP]").hide();
+          $(".rsvpajax").show()
+          $("#progressive_enhancement").text('Turn off Progressive Enhancement'); // change text of button
+           progressive_on = true; 
+        }
+    });
+    
+    var URL_1 = "{{url_for('rsvpEventAjax')}}"; // set URL for Ajax updating
+
+    function updateRSVP(obj) {
+        console.log(obj.rsvp)
+        $(".rsvp .num").text(obj.rsvp); 
+        $(".rsvpajax").hide()
+    }
+    
+    // define action on clicking a rating
+    $("#event").on("click",".rsvpajax",function(event) {
+        if (!progressive_on) { // do not act if progressive enhancement is off
+            return
+        }
+        else { 
+            var name = $('.name');
+            var date = $('.date');
+            console.log('name is ' + name.text() + ' date is ' + date.text())
+            $.post(URL_1, {name: name.text(), date: date.text()}, updateRSVP) // send and retrieve rating information from jsonify
+        }
+    });
+    
+    
+    var URL = "{{url_for('findRSVPsAjax')}}"; // set URL for Ajax updating
+
+    function listRSVP(obj) {
+        $(".people ul").empty()
+        rsvps = obj.rsvps
+        for (var i = 0; i < rsvps.length; i++) {
+            $(".people ul").append($('<li style="list-style-type: none; padding: 0;">').text(rsvps[i]));
+        }
+    }
+    
+    // define action on clicking a rating
+    $("#event").on('click', ".rsvp :input", function() {
+        var name = $('.name');
+        var date = $('.date');
+        console.log('name is ' + name.text() + ' date is ' + date.text())
+        $.post(URL, {name: name.text(), date: date.text()}, listRSVP) // send and retrieve rating information from jsonify
+    });
+    
+    </script>
+    
+    
+
+{% endblock %}<!--Lauren Tso-->
+<!doctype html>
+
+{% extends "index.html" %}
+{% block content %}
+
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Events</title>
+    <!--<link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">-->
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script>
+    $( function() {
+        $("#tabs").tabs();
+    } );
+    </script>
+</head>
+
+<body>
+
+<div id="tabs">
+    <ul>
+        <li><a href="#tabs-1">Upcoming</a></li>
+        <li><a href="#tabs-2">Past</a></li>
+      </ul>
+    <div id="tabs-1">
+        <div class="event-grid" style="display:grid; grid-template-columns:250px 250px 250px; padding:10px;
+                                       grid-column-gap: 10px; grid-row-gap: 15px;">
+        {% for event, id in up %}
+            <div id="event-card" data-id="{{id}}-{{event.edate}}" style="background-color: white;padding:20px; 
+                                                                         border: 1px solid rgba(0, 0, 0, 0.8);
+                                                                         text-align:left">
+                <div id="cover-photo">
+                    <img src="/static/event.png" style="max-width:100%">
+                </div>
+                <div class="info">
+                    <div class="name">{{event.ename}}</div>
+                    <div class="desc">{{event.description}}</div>
+                    <div class="date"><img src="/static/calendar.png" style="max-width:15%"> {{event.edate}}</div>
+                    <div class="location"><img src="/static/location.png" style="max-width:15%"> {{event.city}}, {{event.state}} {{event.country}}</div>
+                    <div class="rsvp">RSVPs: {{event.rsvps}}</div>
+                    <div class="more">
+                        <form method="post" action="/moreEvent/">
+                            <input type="hidden" name="name" value="{{event.ename}}">
+                            <input type="hidden" name="date" value="{{event.edate}}">
+                            <input type="submit" name="submit" value="More Info!">
+                        </form>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+        </div>
+    </div>
+    <div id="tabs-2">
+        <div class="event-grid" style="display:grid; grid-template-columns:250px 250px 250px; padding:10px;
+                                       grid-column-gap: 10px; grid-row-gap: 15px;">
+        {% for event, id in past %}
+            <div id="event-card" data-id="{{id}}-{{event.edate}}" style="background-color: white; padding:20px; 
+                                                                         border: 1px solid rgba(0, 0, 0, 0.8);
+                                                                         text-align:left">
+                <div id="cover-photo">
+                    <img src="/static/event.png" style="max-width:100%">
+                </div>
+                <div class="info">
+                    <div class="name">{{event.ename}}</div>
+                    <div class="desc">{{event.description}}</div>
+                    <div class="date"><img src="/static/calendar.png" style="max-width:15%"> {{event.edate}}</div>
+                    <div class="location"><img src="/static/location.png" style="max-width:15%"> {{event.city}}, {{event.state}} {{event.country}}</div>
+                    <div class="rsvp">RSVPs: {{event.rsvps}}</div>
+                    <div class="more">
+                        <form method="post" action="/moreEvent/">
+                            <input type="hidden" name="name" value="{{event.ename}}">
+                            <input type="hidden" name="date" value="{{event.edate}}">
+                            <input type="submit" name="submit" value="More Info!">
+                        </form>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+        </div>
+    </div>
+</div>
+ 
+<div id = "create-event-button">
+    <form method="post" action="/createEvent/">
+    <input type="submit" name="submit" value="Create Event!">
+    </form>
+</div>
+
+</body>
+</html>
+
+<script>
+    // toggle progressive enhancement on click
+    var progressive_on = false;
+    $("#progressive_enhancement").on('click', function () {
+        if(progressive_on) {
+          // turn it off
+           $("input[name=rsvp]").show(); 
+          $("#progressive_enhancement").text('Turn on Progressive Enhancement'); // change text of button
+           progressive_on = false; 
+        } 
+        else {
+          // turn it on
+           $("input[name=rsvp]").hide();
+          $("#progressive_enhancement").text('Turn off Progressive Enhancement'); // change text of button
+           progressive_on = true; 
+        }
+    });
+    
+    var URL = "{{url_for('rsvpEventAjax')}}"; // set URL for Ajax updating
+
+    function updateRSVP(obj) {
+        var $row = $("[data-id="+obj.eid+"-"+obj.date+"]"); 
+        console.log('row is ' + $row)
+        console.log('text is ' + $row.find(".rsvps").val())
+        $row.find(".rsvps").text(obj.rsvp); 
+    }
+    
+    // define action on clicking a rating
+    $("#events-list").on("click",".rsvps",function(event) {
+        if (!progressive_on) { // do not act if progressive enhancement is off
+            return
+        }
+        else { 
+            var $row = $(this).closest("tr");
+            var name = $row.find('.name');
+            var date = $row.find('.date');
+            console.log('name is ' + name.text() + ' date is ' + date.text())
+            $.post(URL, {name: name.text(), date: date.text()}, updateRSVP) // send and retrieve rating information from jsonify
+        }
+    });
+    
+</script>
+{% endblock %}
+<!--Lauren Tso-->
+<!doctype html>
+
+{% extends "index.html" %}
+{% block content %}
+
+<title>Family</title>
+<body>
+    
+    <h1>Family Trees</h1>
+
+    <form id="search" method="POST" action="/familySearch/">
+        <input id="searchterm" placeholder="Search" name="searchterm">
+        <button id="searchbutton" type="submit" name="submit" value="Search"> Search </button> 
+    </form>
+
+    {% for name in names %}
+        <table id="family-list">
+            <tr>
+                <th>Family Name</th>
+                <th>Member</th>
+                <th>Year</th>
+            </tr>
+            </tr>
+            {% for family in families %}
+                {% if family.name == name %}
+                    <tr class = "member" data-id="{{family.name}}">
+                        <td class="fname">{{family.name}}</td>
+                        <td class="name">{{family.uname}}</td>
+                        <td class="year">{{family.classyear}}</td>
+                    </tr>
+                {% endif %}
+            {% endfor %}
+        </table>
+        <br>
+    {% endfor %}
+ 
+</body>
+</html>
+
+{% endblock %}<!--Riann Tang-->
+<!doctype html>
+
+{% extends "index.html" %}
+{% block content %}
+<title>Feedback</title>
+    <body>
+        <h1>Submit Feedback</h1>
+        <p>Have feedback about the site, questions about the team or some words of wisdom? Submit them here!</p>
+        <p>Note: Required fields are denoted with a *</p>
+        <form name="feedbackForm" action={{ url_for('submitFeedback') }} method="POST">
+            <fieldset>
+                <legend>Submit Feedback</legend>
+                <table>
+                    <tr><td><label for="username">Username:</label></td><td><input type="text" name="username" id="username" placeholder="Your username"></td></tr>
+                    <tr><td><label for="date">Date:</label></td><td><input type="text" name="date" id="date" placeholder="YYYY-MM-DD"></td></tr>
+                    <tr><td><label for="subject">Subject:</label></td><td><input type="text" name="subject" id="subject" placeholder="Subject of your message"></td></tr>
+                    <tr><td><label for="message">Message:*</label></td><td><input type="text" name="message" id="message" placeholder="Your message"></td></tr>
+                </table>
+            </fieldset>
+            <p>
+                <input type='submit' value='Submit Feedback'>
+            </p>
+        </form>
+    </body>
+</html>
+{% endblock %}
+
+<!doctype html>
+
+<html lang='en'>
+<head>
+    <meta charset="utf-8">
+    <meta name=authors content="Riann Tang, Lauren Tso, Tamara Deshong">
+    <meta name=description content="">
+    <meta name=keywords content="">  
+    <link href="https://fonts.googleapis.com/css?family=Raleway" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">
+    <link rel='stylesheet' href="{{url_for('static',filename='styling.css')}}">
+</head>
+<title>Lounge</title>
+
+<body>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+
+<div class="header">
+    <a href={{ url_for('index') }}><img src="/static/logo.jpg" alt="Lounge Logo" id="logo"></a>
+    <ul>
+      <li><a href={{ url_for('index') }}>Home</a></li>
+      <li><a href={{ url_for('messaging') }}>Messages</a></li>
+      <li><a href={{ url_for('viewApproved') }}>Events</a></li>
+      <li><a href={{ url_for('makeDonation') }}>Donate</a></li>
+      <li><a href={{ url_for('giveFeedback') }}>Feedback</a></li>
+      <li><a href={{ url_for('getFamily') }}>Family</a><li>
+      <li><a href={{ url_for('adminBoard') }}>Admins</a></li>
+    </ul>
+</div>
+
+<!--display all flashed messages-->
+{% with messages = get_flashed_messages() %}
+    {% if messages %}
+        <div id="messages">
+        {% for message in messages %}
+            <p>{{ message }}</p>
+        {% endfor %}
+        </div>
+    {% endif %}
+{% endwith %}
+
+{% block content %}
+
+<h1>Welcome!</h1>
+
+<html>
+    <body>
+        <div id="login" style="width: 100%; overflow: hidden;">
+            <div id="log" style="width: 600px; float: left;">
+                <p>Log in!
+                <form action={{ url_for('loginuser') }} method="POST">
+                    <input type="text" name="uid" placeholder="username"><br>
+                    <input type="text" name="pwd" placeholder="password"><br>
+                    <input type="submit" id="submit" name="submit" value="Log In">
+                </form>
+            </div>
+            <div id="create" style="margin-left: 620px;">
+                <p>Don't have an account? Make one.
+                <form method="post" action="{{url_for('account')}}">
+                    <input type="submit" id="submit" name="submit" value="Create Account">
+                </form>
+                </p>
+            </div>
+            <div id="complete" style="margin-left: 620px;">
+                <p>Have an account? Update it.
+                <form method="post" action="{{url_for('completeProfile')}}"> 
+                    <input type="submit" id="submit" name="submit" value="Complete Profile">
+                </form>
+                </p>
+            </div>
+            <div id="logout" style="margin-left: 620px;">
+                <p>Wanna log out? Do it.
+                <form method="post" action="{{url_for('logout')}}"> 
+                    <input type="submit" id="submit" name="submit" value="Log Out">
+                </form>
+                </p>
+            </div>
+        </div>
+    </body>
+
+<p></p>Lounge is a Whiptail database where current members and alumnae of the Wellesley 
+ultimate frisbee team can more easily connect for fundraising, networking, and 
+socializing.</p>
+
+{% endblock %}
+</html>
+<!--Riann Tang-->
+<!doctype html>
+{% extends "index.html" %}
+{% block content %}
+
+<html>
+  <head>
+    <title>Messages!</title>
+  </head>
+  <body>
+    
+    <!--Section for displaying names of people with whom user has a message history-->
+    <div id="msgsDiv">
+      <div id="allM"> 
+          <table id="messagesT" style="width:10%">
+            {% for n in num %}
+              <tr class = 'tt' data-tt= {{mKeys[n]}}>
+                  <td><button class="chooseMsgButton" type="button"><strong>{{ msgs[mKeys[n]] }}:</strong> {{mPrev[n]['message']}}</button></td>
+              </tr>
+            {% endfor %}
+          </table>
+      </div>
+      
+      <!--Section for showing messages one person and sending them messages-->
+      <div id="newM">
+          <subdiv id="oneM">
+            <p>Choose a message from the left to start</p>
+          </subdiv>
+          <form id=newMForm action="/sendMsg/" method="POST">
+              <input class="textField" type="text" name="message" placeholder="Type a message...">
+              <span id="tt"></span> 
+          </form>
+      </div>
+    </div>
+    
+    <script>
+      $("#newM #newMForm").hide();
+    
+      $("#messagesT").on("click", ".chooseMsgButton", function(event) {
+         $("#newM #newMForm").show();
+        var $dt = $(this).closest("[data-tt]");
+        var person = $dt.data('tt');
+        
+        // Hidden input with name of the receiver
+        $("#tt").html('<input type="hidden" id="receiver" name="receiver" value=' + person + '>')
+        
+        // Get messages history with selected person
+        $("#oneM").empty();
+        $("#mHeader").empty();
+        var url = "{{url_for('messagePerson')}}";
+        $.get(url, {person:person}, function(data){
+          $("#newM").prepend("<subdiv id='mHeader'><h2>Messages with " + person + "</h2></subdiv>")
+          for (i=0;i<data.length;i++){
+            if (data[i]['sender'] == person) {
+              $("#oneM").append("<div class='otherM'><p>" + data[i]['message'] + "</p></div>");
+            }
+            else {
+              $("#oneM").append("<div class='senderM'><p>" + data[i]['message'] + "</p></div>");
+            }
+          }
+        });
+      })
+      // Use Ajax to send message and show new message in message history
+      $("#newMForm").on("submit", function(event) {
+        event.preventDefault(); // Keep form from submitting normally
+        var url = "{{url_for('sendMsgAjax')}}";
+        var receiver = document.getElementById("newMForm").elements.namedItem("receiver").value;
+        var message = document.getElementById("newMForm").elements.namedItem("message").value;
+        $.post(url, {receiver: receiver, message:message}, function(data){
+          $("#oneM").append("<div class='senderM'><p>" + message + "</p></div>");
+        }); 
+        $("#newMForm")[0].reset(); //Clear the text field after message sends
+      })
+    </script>
+  
+  </body>
+</html>
+
+{% endblock %}<!doctype html>
+
+{% extends "index.html" %}
+{% block content %}
+<body>
+    <form method="post" action="{{url_for('updateProfile')}}"> 
+    <fieldset>
+        <legend>Personal Information</legend>
+        <table>
+            <tr><td><label for="name"> Name:</label></td><td><input type="text" name="name" id="name"></td></tr>
+            <tr><td><label for="nickname"> Nickname:</label></td><td><input type="text" name="nickname" id="nickname"></td></tr>
+            <tr><td><label for="phnum"> Phone number:</label></td><td><input type="text" name="phnum" id="phnum"></td></tr>
+            <tr><td><label for="year"> Class year:</label></td><td><input type="text" name="year" id="year"></td></tr>
+        </table>
+    </fieldset>
+    <br>
+    <fieldset>
+        <legend>Industry Information</legend>
+        <table>
+            <tr><td><label for="industry"> Industry:<br>
+                <input type="radio" name="ind" value="GandL"> Government and Law<br>
+                <input type="radio" name="ind" value="TandE"> Technology and Engineering<br>
+                <input type="radio" name="ind" value="CandF"> Consulting and Finance<br>
+                <input type="radio" name="ind" value="PandLS"> Physical and Life Sciences<br>
+                <input type="radio" name="ind" value="EandN"> Education and Nonprofit<br>
+                <input type="radio" name="ind" value="HP"> Health Professions<br>
+            </td></tr>
+        </table>
+    </fieldset>
+    <br>
+    <fieldset>
+        <legend>Family Information</legend>
+        <table>    
+            <tr><td><label for="fname"> Family name:</label></td><td><input type="text" name="fname" id="fname"></td></tr>
+            <tr><td><label for="ancestor"> Ancestor:</label></td><td><input type="text" name="ancestor" id="ancestor"></td></tr>
+        </table>
+    </fieldset>
+    <br>
+    <fieldset>
+        <legend>Team Information</legend>
+        <table>    
+            <tr><td><label for="team"> Team:</label></td><td><input type="text" name="team" id="team"></td></tr>
+            <tr><td><label for="ttype"> Team type:<br>
+                <input type="radio" name="t" value="club"> Club<br>
+                <input type="radio" name="t" value="league"> League<br>
+                <input type="radio" name="t" value="college"> College<br>
+            </td></tr>
+            <tr><td><label for="tcity"> Nearest city:</label></td><td><input type="text" name="tcity" id="tcity"></td></tr>
+            <tr><td><label for="tstate"> State:</label></td><td><input type="text" name="tstate" id="tstate"></td></tr>
+            <tr><td><label for="tcountry"> Country:</label></td><td><input type="text" name="tcountry" id="tcountry"></td></tr>
+        </table>
+    </fieldset>
+        <input type="submit" id="submit" name="submit" value="Update Profile">
+    </form>
+</body>
+
+{% endblock %}<!--Riann Tang-->
+<!doctype html>
+
+{% extends "index.html" %}
+{% block content %}
+<title></title>
+    <body>
+        <div id ="profHead">
+            <h1>{{basic.name}} "{{basic.nickname}}"</h1>
+            <p>Class of {{basic.classyear}}</p>
+            <form id="userForm">
+                <input type="hidden" name="uname" value={{basic.username}}>
+            </form>
+            <button type="button" class="msg-person">Message {{basic.nickname}}</button>
+        </div>
+        
+        <script>
+            $(".msg-person").click(function() {
+                var person = userForm.elements["uname"].value;
+                var url = "{{url_for('sendMsgAjax')}}";
+                var message = prompt("Please write a thank you note to " + person + "!");
+                if (message === "") { // Make sure a respone was written 
+                    alert("Please input a message before sending!")
+                }
+                else {
+                    if (message != null) {
+                        $.post(url, { receiver: person, message: message }, function(data) { // Send the message
+                            alert("Message sent!")
+                        });
+                    }
+                }
+            })
+        </script>
+        <div id="profile">
+            {% if permiss %}
+                <div id="industry">
+                    <h2>Industry</h2>
+                    <p>{{industry.iname}}</p>
+                </div>
+                <div id="team">
+                    <h2>Team</h2>
+                    <p>Name: {{team.tname}}</p>
+                    <p>City: {{team.nearestcity}}</p>
+                    <p>State: {{team.state}}</p>
+                    <p>Country: {{team.country}}</p>
+                </div>
+                <div id="contact">
+                    <h2>Contact Info</h2>
+                    <p>Phone: {{contact.phnum}}</p>
+                    <p>Email: {{contact.email}}</p>
+                </div>
+            {% endif %}
+            {% if npermiss %}
+                <div id="industry">
+                    <h2>Industry</h2>
+                    <p>Login to view this info</p>
+                </div>
+                <div id="team">
+                    <h2>Team</h2>
+                    <p>Login to view this info</p>
+                </div>
+                <div id="contact">
+                    <h2>Contact Info</h2>
+                    <p>Login to view this info</p>
+                </div>
+            {% endif %}
+        </div>
+    </body>
+</html>
+{% endblock %}
+
+<!--Riann Tang-->
+<!doctype html>
+
+{% extends "index.html" %}
+{% block content %}
+<title></title>
+    <body>
+        <h1>Search Members</h1>
+        <form method="POST" action={{url_for("searchPerson")}}>
+            Name: <input type="text" name="name" placeholder="name">
+            Class Year: <input type="text" name="year" placeholder="2018">
+        <select name ="Industry">
+          <option value="">Select</option>
+          <option>Government and Law</option>
+          <option>Technology and Engineering</option>
+          <option>Consulting and Finance</option>
+          <option>Physical and Life Sciences</option>
+          <option>Education and Nonprofit</option>
+          <option>Health Professions</option>
+          </select>
+            <input type="submit" value="Submit">
+        </form>
+        
+        <article>
+            <table>
+                <tr>
+                    <th>Name</th>
+                    <th>Nickname</th>
+                    <th>Class Year</th>
+                </tr>
+                {% for item in table %}
+                <tr>
+                    <td>{{item.name}}</td>
+                    <td>{{item.nickname}}</td>
+                    <td>{{item.classyear}}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </article>
+    </body>
+</html>
+{% endblock %}
+
+<!doctype html>
+
+{% extends "index.html" %}
+
+{% block content %}
+
+<body>
+<h1>Create an Account</h1>
+
+<form action={{ url_for('newAccount') }} method="POST">
+    <fieldset>
+        <legend>Account Information</legend>
+        <table>
+            <tr><td><label for="username"> Username:</label></td><td><input type="text" name="username" id="username"></td></tr>
+            <tr><td><label for="password1"> Password:</label></td><td><input type="text" name="password1" id="password1"></td></tr>
+            <tr><td><label for="password2"> Re-enter password:</label></td><td><input type="text" name="password2" id="password2"><br></td></tr>
+            <tr><td><label for="email"> Email:</label></td><td><input type="text" name="email" id="email"></td></tr>
+            <tr><td><label for="security"> Security preferences:<br>
+                <input type="radio" name="sprefs" value="all"> Everyone<br>
+                <input type="radio" name="sprefs" value="class"> Whiptails in my class<br>
+                <input type="radio" name="sprefs" value="overlap"> Whiptails I went to school with<br>
+                <input type="radio" name="sprefs" value="admin"> Just me<br>
+            </td></tr>
+        </table>
+    </fieldset>
+    <p>
+        <input type="submit" id="submit" name="submit" value="Create">
+    </p>
+</form>
+
+</body>
+
+{% endblock %}
+
+</html><!--Riann Tang-->
+<!doctype html>
+
+{% extends "index.html" %}
+{% block content %}
+<title>Donations</title>
+    <body>
+        <h1>Submitted Donations</h1>
+        <h2>New Donations:</h2>
+        <table id="newDonations-list">
+            <tr>
+                <th>Name</th>
+                <th>Item</th>
+                <th>Description</th>
+            </tr>
+            {% for newD in newDonations %}
+            <tr class = "newDonation" >
+                <td class="name">{{newD.pid}}</td>
+                <td class="item">{{newD.item}}</td>
+                <td class="description">{{newD.description}}</td>
+                <td><form method="post" action={{ url_for('markSeen') }}>
+                    <input type="hidden" name="did" value="{{newD.did}}">
+                    <input type="submit" name="submit" value="Mark as read">
+                    <input type="submit" name="submit" value="Mark as unread">
+                </form></td>
+            </tr>
+            {% endfor %}
+        </table>
+        
+        <h2>Old Donations:</h2>
+        <table id="oldDonations-list">
+            <tr>
+                <th>Name</th>
+                <th>Item</th>
+                <th>Description</th>
+            </tr>
+            {% for oldD in oldDonations %}
+            <tr class = "oldDonation" >
+                <td class="name">{{oldD.pid}}</td>
+                <td class="item">{{oldD.item}}</td>
+                <td class="description">{{oldD.description}}</td>
+                <td><form method="post" action={{ url_for('markSeen') }}>
+                    <input type="hidden" name="did" value="{{oldD.did}}">
+                    <input type="submit" name="submit" value="Mark as read">
+                    <input type="submit" name="submit" value="Mark as unread">
+                </form></td>
+            </tr>
+            {% endfor %}
+        </table>
+    </body>
+</html>
+{% endblock %}
+
+<!--Riann Tang-->
+<!doctype html>
+
+{% extends "index.html" %}
+{% block content %}
+<title>Feedback</title>
+    <body>
+        <h1>Submitted Feedback</h1>
+        <table id="feedback-list">
+            <tr>
+                <th>Name</th>
+                <th>Date</th>
+                <th>Subject</th>
+                <th>Message</th>
+            </tr>
+            {% for feed in feedback %}
+            <tr class = "feedback">
+                <td class="name">{{feed.pid}}</td>
+                <td class="date">{{feed.edate}}</td>
+                <td class="subject">{{feed.subject}}</td>
+                <td class="message">{{feed.message}}</td>
+                <td><button type="button" class="msg-person">Respond to feedback!</button></td>
+            </tr>
+            {% endfor %}
+        </table>
+        
+        <script>
+            $(".msg-person").click(function() {
+                var $currentRow = $(this).closest("tr"); 
+                var person = $currentRow.find(".name").text(); 
+                var feedback = $currentRow.find(".message").text();
+                if (person != "None") {  // Make sure feedback was not submitted anonymously 
+                    var url = "{{url_for('sendMsgAjax')}}";
+                    var message = prompt("Please write a thank you note to " + person + "!");
+                    if (message === ""){ // Make sure a respone was written 
+                        alert ("Please input a message before sending!")
+                    }
+                    else {
+                        if (message != null) {
+                            var message = "In response to your recent feedback, we wanted to say: " + message 
+                            $.post(url, {receiver: person, message:message}, function(data){ // Send the message
+                                alert("Message sent!")
+                            });
+                        }
+                    }
+                }
+                else { 
+                    alert("This feedback was submitted anonymously and cannot be responded to.")
+                }
+            })
+        </script>
+
+    </body>
+</html>
+{% endblock %}
+
+body {
+    font-family: 'Raleway', sans-serif;
+    background-color: #b7dbfa;
+}
+
+.header {
+  padding: 80px;
+  background: white;
+  font-size: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  top: 10px;
+}
+
+.header img {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: 450px;
+    height: 180px;
+    float: left;
+}
+
+.header ul {
+    text-align: right;
+}
+
+.header li {
+    display: inline;
+    color: #88c3f7;
+    padding: 10px;
+}
+
+a {
+    text-decoration: none !important;
+}
+
+a:visited {
+    color: #2E922D;
+}
+
+a:hover {
+    color: #07BEB8;
+}
+
+#msgsDiv {
+    display: flex;
+}
+
+#allM {
+   flex: 25%; 
+   border-radius: 8px;
+   padding:10px;
+}
+
+#newM {
+   flex: 75%; 
+   padding: 10px;
+   font-size: 16px;
+   border-style: solid;
+   border-width: medium;
+   border-color: white;
+   border-radius: 8px;
+}
+
+#mHeader {
+    text-align: left;
+    font-size: 18px;
+    font-weight:bold;
+    font-family: 'Montserrat', sans-serif;
+    float:left;
+    z-index: 2;
+    text-transform: uppercase;
+    text-decoration: underline;
+    color: #2E922D;
+}
+
+.senderM{
+    border: 2px solid #07BEB8;
+    background-color: #C4FFF9;
+    border-radius: 20px;
+    margin: 10px 0;
+    text-align: right;
+    float:right;
+    margin-bottom: 10px;
+    width:auto;
+    max-width: 50%;
+    position:relative;
+    clear: both;
+    word-wrap: break-word;
+    padding-left: 8px;
+    padding-right: 8px;
+}
+
+.otherM{
+    border: 2px solid #999;
+    background-color: #cccccc;
+    margin: 10px 0;    
+    text-align: left;
+    border-radius: 20px;
+    float:left;
+    width:auto;
+    max-width: 50%;
+    position:relative;
+    clear: both;
+    word-wrap: break-word;
+    margin-bottom: 10px;
+    padding-left: 8px;
+    padding-right: 8px;
+}
+
+.senderM:after {
+    content: "";
+    clear: both;
+    display: table;
+}
+
+.textField {
+    width: 800px;
+    height:50px;
+    border-radius: 8px;
+}
+
+.chooseMsgButton {
+    background-color: white;
+    padding: 10px 24px;
+    border-color: #2E922D;
+    color: black;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    -webkit-transition-duration: 0.4s; /* Safari */
+    transition-duration: 0.4s;
+    width: 400px;
+    border-radius: 8px;
+}
+
+.chooseMsgButton:hover {
+    background-color: #2E922D;
+    color: white;
+}
+
+select {
+  width: 200px;
+  border-radius: 10px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  height: 25px;
+  font-family: 'Raleway', sans-serif;
+  background-color:white;
+}
+
+input [name="text"]{
+    width:200px;
+    height:20px;
+    border-radius: 8px;
+    background-color: white;
+    border: 2px solid #cccccc
+}
+
+fieldset {
+    border-radius: 8px; 
+    border: 2px solid #07BEB8;
+}
+
+#team-pic {
+    top: 20px;
+    left: 20px;
+    width: 1000px;
+    height: 600px;
+}
+
+#profile {
+   display: flex;
+   padding: 10px;
+   border-style: solid;
+   border-width: medium;
+   border-color: white;
+   border-radius: 8px;
+}
+
+#profHead {
+    padding: 8px;
+}
+
+#profile h2 {
+    color: #07BEB8;
+    text-decoration: underline;
+}
+
+#industry{
+    flex: 33%;  
+}
+
+#team {
+    flex: 33%;
+}
+
+#contact {
+    flex: 33%;
+}
