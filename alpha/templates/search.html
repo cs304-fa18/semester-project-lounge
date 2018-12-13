@@ -1,0 +1,43 @@
+<!--Riann Tang-->
+<!doctype html>
+
+{% extends "index.html" %}
+{% block content %}
+<title></title>
+    <body>
+        <h1>Search Members</h1>
+        <form method="POST" action={{url_for("searchPerson")}}>
+            Name: <input type="text" name="name" placeholder="name">
+            Class Year: <input type="text" name="year" placeholder="2018">
+        <select name ="Industry">
+          <option value="">Select</option>
+          <option>Government and Law</option>
+          <option>Technology and Engineering</option>
+          <option>Consulting and Finance</option>
+          <option>Physical and Life Sciences</option>
+          <option>Education and Nonprofit</option>
+          <option>Health Professions</option>
+          </select>
+            <input type="submit" value="Submit">
+        </form>
+        
+        <article>
+            <table>
+                <tr>
+                    <th>Name</th>
+                    <th>Nickname</th>
+                    <th>Class Year</th>
+                </tr>
+                {% for item in table %}
+                <tr>
+                    <td>{{item.name}}</td>
+                    <td>{{item.nickname}}</td>
+                    <td>{{item.classyear}}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </article>
+    </body>
+</html>
+{% endblock %}
+

@@ -36,10 +36,12 @@
                         alert ("Please input a message before sending!")
                     }
                     else {
-                        var message = "In response to your recent feedback, we wanted to say: " + message 
-                        $.post(url, {receiver: person, message:message}, function(data){ // Send the message
-                            alert("Message sent!")
-                        });
+                        if (message != null) {
+                            var message = "In response to your recent feedback, we wanted to say: " + message 
+                            $.post(url, {receiver: person, message:message}, function(data){ // Send the message
+                                alert("Message sent!")
+                            });
+                        }
                     }
                 }
                 else { 
