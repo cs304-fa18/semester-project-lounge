@@ -1,7 +1,7 @@
 from flask import (Flask, url_for, flash, render_template, request, redirect, session, jsonify)
 from datetime import date, datetime
 from threading import Thread, Lock
-import events, messages, family, login, donations, feedback, conn, profiles
+import events, messages, family, login, donations, feedback, conn, profiles, search
 from werkzeug import secure_filename
 import bcrypt
 
@@ -15,7 +15,7 @@ def index():
 
 @app.route('/admin/')
 def adminBoard():
-    if session.get('uid') == '':
+    if session.get('uid') == None:
         flash("Need to log in")
         return redirect(url_for('index'))
     if session.get('utype') == 'regular':
@@ -118,7 +118,7 @@ def completeProfile():
 
 @app.route('/updateProfile/', methods=['POST'])
 def updateProfile():
-    if session.get('uid') == '':
+    if session.get('uid') == None:
         flash("Need to log in")
         return render_template('index.html')
     else:
@@ -161,7 +161,7 @@ def updateProfile():
 
 @app.route('/approved/')
 def viewApproved():
-    if session.get('uid') == '':
+    if session.get('uid') == None:
         flash("Need to log in")
         return render_template('index.html')
     else:
@@ -198,7 +198,7 @@ def moreEvent():
 
 @app.route('/submitted/')
 def viewSubmitted():
-    if session.get('uid') == '':
+    if session.get('uid') == None:
         flash("Need to log in")
         return render_template('index.html')
     else:
@@ -221,7 +221,7 @@ def createEvent():
 
 @app.route('/submitEvent/', methods=['POST'])
 def submitEvent():
-    if session.get('uid') == '':
+    if session.get('uid') == None:
         flash("Need to log in")
         return render_template('index.html')
     else:
@@ -303,7 +303,7 @@ def findRSVPsAjax():
 @app.route('/messages/')
 def messaging():
     """Returns html page with necessary data to populate messaging page."""
-    if session.get('uid') == '':
+    if session.get('uid') == None:
         flash("Need to log in")
         return render_template('index.html')
     else:
@@ -348,7 +348,7 @@ def messagePerson():
 @app.route('/donate/')
 def makeDonation():
     """Returns html page populated with donation form"""
-    if session.get('uid') == '':
+    if session.get('uid') == None:
         flash("Need to log in")
         return render_template('index.html')
     else:
@@ -357,7 +357,7 @@ def makeDonation():
 @app.route('/submitDonation/', methods=['POST'])
 def submitDonation():
     """Submits donation by inserting the data into the donation table"""
-    if session.get('uid') == '':
+    if session.get('uid') == None:
         flash("Need to log in")
         return render_template('index.html')
     else:
@@ -390,7 +390,7 @@ def submitDonation():
 @app.route('/viewDonations/')
 def viewDonations():
     """Returns html page populated with data of all submitted donations"""
-    if session.get('uid') == '':
+    if session.get('uid') == None:
         flash("Need to log in")
         return render_template('index.html')
     else: 
@@ -418,7 +418,7 @@ def markSeen():
 @app.route('/feedback/')
 def giveFeedback():
     """Return html page with feedback form"""
-    if session.get('uid') == '':
+    if session.get('uid') == None:
         flash("Need to log in")
         return render_template('index.html')
     else: 
@@ -455,7 +455,7 @@ def submitFeedback():
 @app.route('/viewFeedback/')
 def viewFeedback():
     """Return all submitted feedback in html page"""
-    if session.get('uid') == '':
+    if session.get('uid') == None:
         flash("Need to log in")
         return render_template('index.html')
     else: 
@@ -475,7 +475,7 @@ def redirect_url():
 @app.route('/family/', defaults={'searchterm':''}) # defaults to showing all families
 @app.route('/family/<searchterm>/', methods=['GET'])
 def getFamily(searchterm):
-    if session.get('uid') == '':# Not logged in yet
+    if session.get('uid') == None:# Not logged in yet
         flash("Need to log in")
         return render_template('index.html') # Go to a temporary login 
     else:
@@ -489,13 +489,14 @@ def getFamily(searchterm):
 def getProfile(username):
     """Retrieves the profile of the given user and ensures security preferences are respected"""
     currentU = session.get('uid')
-    if currentU == '':
+    if currentU == None:
         flash("Need to log in")
         return render_template('index.html')
         
     curs = conn.getConn()
-    if len(profiles.checkPerson(curs, username)) == 0:
-        return render_template('search.html', dne=1)
+    # check = profiles.checkPerson(curs, username)
+    # if len(check) == 0:
+    #     return render_template('search.html', dne=1)
     
     #Get all the user's info
     basic = profiles.getBasicInfo(curs, username)
@@ -526,6 +527,38 @@ def getProfile(username):
         npermiss = 1
         return render_template('profile.html', basic=basic, industry=industry, team=team, 
                                 contact=contact, npermiss=npermiss)
+
+@app.route("/search", methods=["GET", "POST"])
+def searchPerson():
+    if session.get('uid') == None:# Not logged in yet
+        flash("Need to log in")
+        return render_template('index.html') # Go to a temporary login 
+    if request.method == 'GET':
+        return render_template('search.html')
+    else:
+        name = request.form.get("name")
+        year= request.form.get("year")
+        indust = request.form.get("Industry")
+        
+        if all([name=="", year=="", indust==""]):
+            flash("enter something to filter your search by")
+            return render_template('search.html')
+
+                
+        searchItems = []
+        if name!="":
+            searchItems.append(["name", "%"+name+"%"])
+        if year !="" and year.isdigit():
+            searchItems.append(["classyear","%"+year+"%" ])
+        if indust !="":
+            searchItems.append(["iname","%"+indust+"%" ])
+        
+        transpose = zip(*searchItems)
+        
+        curs = conn.getConn()
+        table = search.search(curs, transpose)
+        
+        return render_template('search.html', table=table)
 
 if __name__ == '__main__':
     app.debug = True
