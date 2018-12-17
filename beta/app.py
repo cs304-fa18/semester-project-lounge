@@ -12,10 +12,8 @@ lock = Lock()
 @app.route('/')
 def index():
     if session.get('uid') == None or session.get('uid') == '':
-        print('hey im here')
         return render_template('index.html', logout='yes')
     else:
-        print('down here')
         print(session.get('uid'))
         uid = session.get('uid')
         return render_template('index.html', uid=uid)
@@ -144,17 +142,20 @@ def updateProfile():
         nname = request.form.get("nickname")
         year = request.form.get("year")
         phnum = request.form.get("phnum")
-        industry = request.form.get("ind")
+        industry = request.form.get("ind", '')
         fname = request.form.get("fname")
         ances = request.form.get("predecessor")
         team = request.form.get("team")
-        ttype = request.form.get("t")
+        ttype = request.form.get("t", '')
         ncity = request.form.get("tcity")
         state = request.form.get("tstate")
         country = request.form.get("tcountry")
         
         error = False
-        if year and not year.isdigit():
+        print(year)
+        print(type(year))
+        print(year != 'None')
+        if year != 'None' and not year.isdigit():
             error = True
             flash("Invalid class year")
         
