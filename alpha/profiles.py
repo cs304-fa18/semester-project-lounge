@@ -7,7 +7,7 @@ import MySQLdb
 def checkPerson(curs, uname):
     curs.execute('''select * from user where username=%s''', (uname,))
     return curs.fetchone
-    
+
 def getSecurityPrefs(curs, uname):
     """Returns the security preferences of given user"""
     curs.execute('''select sprefs from user where username=%s''', (uname, ))
@@ -40,12 +40,9 @@ def getYear(curs, uname):
     
 def getOverlap(curs, uname1, uname2):
     """Return 1 if there is an overlap in time at Wellesley, 0 if not"""
-    olap = 1
+    olap = 0
     year1 = int(getYear(curs, uname1)['classyear'])
     year2 = int(getYear(curs, uname2)['classyear'])
-    for i in range(4):
-        if (year1 + i) == year2:
-            olap = 1
-        if (year1 - i) == year2:
-            olap = 1
+    if abs(year1-year2) < 4:
+        olap = 1
     return olap

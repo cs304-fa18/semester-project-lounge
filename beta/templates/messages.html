@@ -24,7 +24,8 @@
       <!--Section for showing messages one person and sending them messages-->
       <div id="newM">
           <subdiv id="oneM">
-            <p>Choose a message from the left to start</p>
+            <p>Choose a message from the left to start. If none exist, try <a href={{ url_for('searchPerson') }}>searching</a>
+            for a friend's profile navigation  to begin a message with them.</p>
           </subdiv>
           <form id=newMForm action="/sendMsg/" method="POST">
               <input class="textField" type="text" name="message" placeholder="Type a message...">

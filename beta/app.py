@@ -11,14 +11,10 @@ lock = Lock()
 
 @app.route('/')
 def index():
-    if session.get('uid') == None or session.get('uid') == '':
-        print('hey im here')
-        return render_template('index.html', logout='yes')
+    if session.get('uid') == None:
+        return render_template('notLI.html')
     else:
-        print('down here')
-        print(session.get('uid'))
-        uid = session.get('uid')
-        return render_template('index.html', uid=uid)
+        return render_template('LI.html')
 
 @app.route('/admin/')
 def adminBoard():
@@ -71,9 +67,12 @@ def newAccount():
         if login.findUser(curs, uname) is not None:
             flash('That username is taken')
             return redirect(url_for('index'))
+        flash("Account for new user {} has been created. Please fill out the rest of your info. Fields marked with * are required".format(uname))
         login.insertUser(curs, email, uname, hashed, sprefs)
-        flash('Thanks for creating in account. Try logging in now!')
-        return redirect(url_for('index'))
+        session['uid'] = uname
+        session['logged_in'] = True
+        session['utype'] = "regular"
+        return redirect(url_for('completeProfile'))
             
 @app.route('/login/', methods=['POST'])
 def loginuser():
@@ -116,13 +115,13 @@ def logout():
             return redirect(url_for('index'))
     except Exception as err:
         flash('some kind of error '+str(err))
-        return redirect( url_for('index') )
+        return redirect( url_for('index'))
 
 @app.route('/completeProfile/', methods=['GET', 'POST'])
 def completeProfile():
     if session.get('uid') == None:
         flash("Need to log in")
-        return render_template('index.html')
+        return redirect( url_for('index'))
     else:
         curs = conn.getConn()
         uid = session.get('uid')
@@ -137,24 +136,27 @@ def completeProfile():
 def updateProfile():
     if session.get('uid') == None:
         flash("Need to log in")
-        return render_template('index.html')
+        return redirect( url_for('index'))
     else:
         uname = session.get('uid')
         name = request.form.get("name")
         nname = request.form.get("nickname")
         year = request.form.get("year")
         phnum = request.form.get("phnum")
-        industry = request.form.get("ind")
+        industry = request.form.get("ind", '')
         fname = request.form.get("fname")
         ances = request.form.get("predecessor")
         team = request.form.get("team")
-        ttype = request.form.get("t")
+        ttype = request.form.get("t", '')
         ncity = request.form.get("tcity")
         state = request.form.get("tstate")
         country = request.form.get("tcountry")
         
         error = False
-        if year and not year.isdigit():
+        print(year)
+        print(type(year))
+        print(year != 'None')
+        if year != 'None' and not year.isdigit():
             error = True
             flash("Invalid class year")
         
@@ -166,7 +168,7 @@ def updateProfile():
             login.insertFamily(curs, uname, fname, ances)
             login.insertTeam(curs, uname, team, ttype, ncity, state, country)
             flash('updated profile!')
-            return redirect(url_for('index'))
+            return redirect(url_for('getProfile', uname))
         else:
             return redirect(request.referrer)
 
@@ -325,6 +327,7 @@ def messaging():
         allMsgs = messages.getMessageHistory(curs, uid) # Get people user has messaged/received messages from
         allK = list(allMsgs.keys())
         mPreview = [messages.getLastM(curs,uid, allK[i]) for i in range(0,len(allK))]
+        print mPreview
         num = [i for i in range(0,len(allMsgs))]
         return render_template('messages.html', num=num, msgs=allMsgs, mKeys=allK, mPrev=mPreview)
 
@@ -372,7 +375,7 @@ def submitDonation():
     """Submits donation by inserting the data into the donation table"""
     if session.get('uid') == None:
         flash("Need to log in")
-        return render_template('index.html')
+        return redirect( url_for('index'))
     else:
         error = False
         uname = request.form.get('username')
@@ -490,18 +493,14 @@ def redirect_url():
 def getFamily(searchterm):
     if session.get('uid') == None:# Not logged in yet
         flash("Need to log in")
-        return redirect(url_for('index')) 
+        return redirect(url_for('index'))
     else:
         curs = conn.getConn()
-        names_dict = family.findFamily(curs, searchterm)
-        if len(names_dict) == 0:
-            flash('No names match this search')
-            return redirect(request.referrer) 
-        else:
-            families = family.getFamily(curs, names_dict)
-            names_all = [fam['name'] for fam in families]
-            names = list(set(names_all))
-            return render_template('family.html', families=families, names=names)
+        families = family.getFamily(curs, searchterm)
+        names_all = [fam['name'] for fam in families]
+        names = list(set(names_all))
+        return render_template('family.html', families=families, names=names)
+
         
 @app.route('/profile/<username>/', methods=['GET'])
 def getProfile(username):
@@ -510,12 +509,11 @@ def getProfile(username):
     if currentU == None:
         flash("Need to log in")
         return redirect(url_for('index'))
-        
+    
+    if currentU == username: # Check if viewing own profile
+        isSelf = 1;
+            
     curs = conn.getConn()
-
-    # check = profiles.checkPerson(curs, username)
-    # if len(check) == 0:
-    #     return render_template('search.html', dne=1)
 
     #Get all the user's info
     basic = profiles.getBasicInfo(curs, username)
@@ -523,31 +521,38 @@ def getProfile(username):
     team = profiles.getTeam(curs, username)
     contact = profiles.getContactInfo(curs, username)
     
-    #Check user's security preferences and whether person viewing profiles matches prefs
-    prefs = profiles.getSecurityPrefs(curs, username)['sprefs']
-
-    if session.get('utype') == 'admin': #Admins can always view all info
-        permiss =1 
-    elif prefs == "all":
-        permiss = 1
-    elif prefs == "class":
-        if profiles.getYear(curs, username) == profiles.getYear(curs, currentU):
-            print "same class"
-            permiss = 1
-    elif prefs == "overlap":
-        if profiles.getOverlap(curs, username, currentU) == 1:
-            permiss = 1
-    
-    try: # Determine how much to show on html page
-        permiss
+    try: # If viewing own profile
+        isSelf
+        permiss=1
         return render_template('profile.html', basic=basic, industry=industry, team=team, 
-                                contact=contact, permiss=permiss)
+                                contact=contact, permiss=permiss, isSelf=isSelf)
     except NameError:
-        npermiss = 1
-        return render_template('profile.html', basic=basic, industry=industry, team=team, 
-                                contact=contact, npermiss=npermiss)
+        #Check user's security preferences and whether person viewing profiles matches prefs
+        prefs = profiles.getSecurityPrefs(curs, username)['sprefs']
+    
+        if session.get('utype') == 'admin': #Admins can always view all info
+            permiss = 1 
+        elif prefs == "all":
+            permiss = 1
+        elif prefs == "class":
+            if profiles.getYear(curs, username) == profiles.getYear(curs, currentU):
+                print "same class"
+                permiss = 1
+        elif prefs == "overlap":
+            if profiles.getOverlap(curs, username, currentU) == 1:
+                permiss = 1
+        
+        try: # Determine how much to show on html page
+            permiss
+            return render_template('profile.html', basic=basic, industry=industry, team=team, 
+                                        contact=contact, permiss=permiss)
+        except NameError:
+            npermiss = 1
+            return render_template('profile.html', basic=basic, industry=industry, team=team, 
+                                        contact=contact, npermiss=npermiss)
 
-@app.route("/search", methods=["GET", "POST"])
+        
+@app.route("/search/", methods=["GET", "POST"])
 def searchPerson():
     if session.get('uid') == None:# Not logged in yet
         flash("Need to log in")
