@@ -68,8 +68,12 @@ def newAccount():
         if login.findUser(curs, uname) is not None:
             flash('That username is taken')
             return redirect(url_for('index'))
+        flash("Account for new user {} has been created. Please fill out the rest of your info. Fields marked with * are required".format(uname))
         login.insertUser(curs, email, uname, hashed, sprefs)
-        return redirect(url_for('index'))
+        session['uid'] = uname
+        session['logged_in'] = True
+        session['utype'] = "regular"
+        return redirect(url_for('completeProfile'))
             
 @app.route('/login/', methods=['POST'])
 def loginuser():
@@ -142,6 +146,7 @@ def updateProfile():
         if name == '':
             error = True
             flash("Missing input: Name is missing")
+            
         if not year.isdigit():
             error = True
             flash("Invalid class year")
@@ -157,7 +162,7 @@ def updateProfile():
             if team != '':
                 login.insertTeam(curs, uname, team, ttype, ncity, state, country)
             flash('updated profile!')
-            return redirect(url_for('index'))
+            return redirect(url_for("getProfile", username=session.get('uid')))
         else:
             return redirect(request.referrer)
 
@@ -401,7 +406,7 @@ def viewDonations():
             return redirect(url_for('makeDonation'))
         else:
             curs = conn.getConn()
-            oldDonations = donations.oldDonations(curs)
+            oldDonations = donations.getOldDonations(curs)
             newDonations = donations.getNewDonations(curs)
             return render_template('viewDonations.html', oldDonations=oldDonations, newDonations=newDonations)
 
@@ -497,7 +502,7 @@ def getProfile(username):
     
     if currentU == username: # Check if viewing own profile
         isSelf = 1;
-        
+            
     curs = conn.getConn()
 
     #Get all the user's info
@@ -506,39 +511,35 @@ def getProfile(username):
     team = profiles.getTeam(curs, username)
     contact = profiles.getContactInfo(curs, username)
     
-    #Check user's security preferences and whether person viewing profiles matches prefs
-    prefs = profiles.getSecurityPrefs(curs, username)['sprefs']
-
-    if session.get('utype') == 'admin': #Admins can always view all info
-        permiss = 1 
-    elif prefs == "all":
-        permiss = 1
-    elif prefs == "class":
-        if profiles.getYear(curs, username) == profiles.getYear(curs, currentU):
-            print "same class"
-            permiss = 1
-    elif prefs == "overlap":
-        if profiles.getOverlap(curs, username, currentU) == 1:
-            permiss = 1
-    
-    try: # Determine how much to show on html page
-        permiss
-        try: # Determine how much to show on html page
-            isSelf
-            return render_template('profile.html', basic=basic, industry=industry, team=team, 
-                                    contact=contact, permiss=permiss, isSelf=isSelf)
-        except NameError:
-            return render_template('profile.html', basic=basic, industry=industry, team=team, 
-                                    contact=contact, permiss=permiss)
+    try: # If viewing own profile
+        isSelf
+        permiss=1
+        return render_template('profile.html', basic=basic, industry=industry, team=team, 
+                                contact=contact, permiss=permiss, isSelf=isSelf)
     except NameError:
-        npermiss = 1
+        #Check user's security preferences and whether person viewing profiles matches prefs
+        prefs = profiles.getSecurityPrefs(curs, username)['sprefs']
+    
+        if session.get('utype') == 'admin': #Admins can always view all info
+            permiss = 1 
+        elif prefs == "all":
+            permiss = 1
+        elif prefs == "class":
+            if profiles.getYear(curs, username) == profiles.getYear(curs, currentU):
+                print "same class"
+                permiss = 1
+        elif prefs == "overlap":
+            if profiles.getOverlap(curs, username, currentU) == 1:
+                permiss = 1
+        
         try: # Determine how much to show on html page
-            isSelf 
+            permiss
             return render_template('profile.html', basic=basic, industry=industry, team=team, 
-                                    contact=contact, npermiss=npermiss, isSelf=isSelf)
+                                        contact=contact, permiss=permiss)
         except NameError:
+            npermiss = 1
             return render_template('profile.html', basic=basic, industry=industry, team=team, 
-                                    contact=contact, npermiss=npermiss)
+                                        contact=contact, npermiss=npermiss)
 
 @app.route("/search", methods=["GET", "POST"])
 def searchPerson():
