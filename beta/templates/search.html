@@ -5,9 +5,9 @@
 {% block content %}
 <title></title>
     <body>
-        <h1>Search Members</h1>
+        <h1>Search For Members</h1>
         <form method="POST" action={{url_for("searchPerson")}}>
-            Name: <input type="text" name="name" placeholder="name">
+            Name: <input type="text" name="name" placeholder="Name">
             Class Year: <input type="text" name="year" placeholder="2018">
         <select name ="Industry">
           <option value="">Select</option>
@@ -22,6 +22,7 @@
         </form>
         
         <article>
+            <p>Click on person's name to be redirected to their profile page.</p>
             <table>
                 <tr>
                     <th>Name</th>
@@ -30,7 +31,7 @@
                 </tr>
                 {% for item in table %}
                 <tr>
-                    <td>{{item.name}}</td>
+                    <td><a href={{ url_for('getProfile', username=item.username) }}>{{item.name}}</td>
                     <td>{{item.nickname}}</td>
                     <td>{{item.classyear}}</td>
                 </tr>

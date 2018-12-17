@@ -1,56 +1,80 @@
-# Riann Tang
+<!--Riann Tang-->
+<!doctype html>
+{% extends "index.html" %}
+{% block content %}
 
-import sys
-import MySQLdb
-
-def getSenderHist(curs, user):
-    """Return the name of people user has messaged."""
-    curs.execute('''select receiver from messages where sender=%s''', (user,))
-    return curs.fetchall()
-
-def getReceiveHist(curs,user):
-    """Return the name of people user has recieved messages from."""
-    curs.execute('''select sender from messages where receiver=%s''', (user,))
-    return curs.fetchall()
-
-def getName(curs, user):
-    """Return the name of the given user."""
-    curs.execute('''select name from user where username=%s''', (user,))
-    return curs.fetchone()
-   
-def getMessageHistory(curs, user):
-    """Return all messages user has sent and recieved messages from"""
-    sendHist = getSenderHist(curs, user)
-    receiveHist=getReceiveHist(curs, user)
-    allMs = sendHist+receiveHist
-    distinctMs = []
-    for i in range (0, len(allMs)):
-        if allMs[i].has_key('receiver'):
-            if allMs[i]['receiver'] not in distinctMs:
-                distinctMs.append(allMs[i]['receiver'])
-        if allMs[i].has_key('sender'):
-            if allMs[i]['sender'] not in distinctMs:
-                distinctMs.append(allMs[i]['sender'])
-    mHist = {}
-    for i in range (0,len(distinctMs)):
-        name = getName(curs, distinctMs[i])
-        mHist[distinctMs[i]] = name['name']
-    return mHist
-
-def getLastM(curs, user1, user2):
-    """Return most recent message between two given users"""
-    curs.execute('''select message from messages where (sender=%s and receiver=%s) or 
-    (sender=%s and receiver=%s) order by mid desc limit 1''',(user1,user2,user2,user1,))
-    return curs.fetchone()
-
-def getMessages(curs, user1, user2):
-    """Return all messages between two given users"""
-    curs.execute('''select message, sender from messages where (sender=%s and receiver=%s) 
-    or (sender=%s and receiver=%s)''',(user1, user2, user2, user1,))
-    return curs.fetchall()
-
-def sendMessage(curs, sender, receiver, msg):
-    "Insert messages into messages table"
-    curs.execute('''insert into messages (sender, receiver, message) values 
-    (%s,%s,%s)''', (sender, receiver, msg,))
+<html>
+  <head>
+    <title>Messages!</title>
+  </head>
+  <body>
     
+    <!--Section for displaying names of people with whom user has a message history-->
+    <div id="msgsDiv">
+      <div id="allM"> 
+          <table id="messagesT" style="width:10%">
+            {% for n in num %}
+              <tr class = 'tt' data-tt= {{mKeys[n]}}>
+                  <td><button class="chooseMsgButton" type="button"><strong>{{ msgs[mKeys[n]] }}:</strong> {{mPrev[n]['message']}}</button></td>
+              </tr>
+            {% endfor %}
+          </table>
+      </div>
+      
+      <!--Section for showing messages one person and sending them messages-->
+      <div id="newM">
+          <subdiv id="oneM">
+            <p>Choose a message from the left to start. If none exist, try <a href={{ url_for('searchPerson') }}>searching</a>
+            for a friend's profile navigation  to begin a message with them.</p>
+          </subdiv>
+          <form id=newMForm action="/sendMsg/" method="POST">
+              <input class="textField" type="text" name="message" placeholder="Type a message...">
+              <span id="tt"></span> 
+          </form>
+      </div>
+    </div>
+    
+    <script>
+      $("#newM #newMForm").hide();
+    
+      $("#messagesT").on("click", ".chooseMsgButton", function(event) {
+         $("#newM #newMForm").show();
+        var $dt = $(this).closest("[data-tt]");
+        var person = $dt.data('tt');
+        
+        // Hidden input with name of the receiver
+        $("#tt").html('<input type="hidden" id="receiver" name="receiver" value=' + person + '>')
+        
+        // Get messages history with selected person
+        $("#oneM").empty();
+        $("#mHeader").empty();
+        var url = "{{url_for('messagePerson')}}";
+        $.get(url, {person:person}, function(data){
+          $("#newM").prepend("<subdiv id='mHeader'><h2>Messages with " + person + "</h2></subdiv>")
+          for (i=0;i<data.length;i++){
+            if (data[i]['sender'] == person) {
+              $("#oneM").append("<div class='otherM'><p>" + data[i]['message'] + "</p></div>");
+            }
+            else {
+              $("#oneM").append("<div class='senderM'><p>" + data[i]['message'] + "</p></div>");
+            }
+          }
+        });
+      })
+      // Use Ajax to send message and show new message in message history
+      $("#newMForm").on("submit", function(event) {
+        event.preventDefault(); // Keep form from submitting normally
+        var url = "{{url_for('sendMsgAjax')}}";
+        var receiver = document.getElementById("newMForm").elements.namedItem("receiver").value;
+        var message = document.getElementById("newMForm").elements.namedItem("message").value;
+        $.post(url, {receiver: receiver, message:message}, function(data){
+          $("#oneM").append("<div class='senderM'><p>" + message + "</p></div>");
+        }); 
+        $("#newMForm")[0].reset(); //Clear the text field after message sends
+      })
+    </script>
+  
+  </body>
+</html>
+
+{% endblock %}
