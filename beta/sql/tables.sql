@@ -127,8 +127,6 @@ create table family(
     predecessor varchar(20), 
     member varchar(20),
     primary key(name, member),
-    foreign key (predecessor) references user(username)
-    on delete restrict on update cascade,
     foreign key (member) references user(username)
     on delete restrict on update cascade
     )
