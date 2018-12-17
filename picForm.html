@@ -20,9 +20,14 @@
 
 <form method="post" action = "" enctype = "multipart/form-data">
         <p><label for="id">username: <input type="text" name="id"></label></p>
-        <p><input type = "file" name = "file" accept="image/*"></p>
+        <p><label for="pic">Pic: <input type="file" name="pic" accept="image/*"></label></p>
         <p><input type = "submit" value="upload"></p>
 </form>
+
+{% if nm != '' and src != '' %}
+<p>Image: {{name}}</p>
+<p> <img src="{{src}}" width="400" height ="500"></p>
+{% endif %}
 
 </body>
 </html>
