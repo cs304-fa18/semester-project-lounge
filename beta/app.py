@@ -11,7 +11,8 @@ lock = Lock()
 
 @app.route('/')
 def index():
-    if session.get('uid') == None:
+    if session.get('uid') == None or session.get('uid') == '':
+        print('hey im here')
         return render_template('notLI.html')
     else:
         return render_template('LI.html')
@@ -67,12 +68,9 @@ def newAccount():
         if login.findUser(curs, uname) is not None:
             flash('That username is taken')
             return redirect(url_for('index'))
-        flash("Account for new user {} has been created. Please fill out the rest of your info. Fields marked with * are required".format(uname))
         login.insertUser(curs, email, uname, hashed, sprefs)
-        session['uid'] = uname
-        session['logged_in'] = True
-        session['utype'] = "regular"
-        return redirect(url_for('completeProfile'))
+        flash('Thanks for creating in account. Try logging in now!')
+        return redirect(url_for('index'))
             
 @app.route('/login/', methods=['POST'])
 def loginuser():
@@ -93,7 +91,7 @@ def loginuser():
             session['logged_in'] = True
             session['visits'] = 1
             session['utype'] = utype
-            return redirect(url_for('index'))
+            return redirect(url_for('completeProfile'))
         else:
             flash('login incorrect. Try again or join')
             return redirect(url_for('index'))
@@ -128,7 +126,7 @@ def completeProfile():
         basic = profiles.getBasicInfo(curs, uid)
         contact = profiles.getContactInfo(curs, uid)
         industry = profiles.getIndustry(curs, uid)
-        family = profiles.getFamily(curs, uid)
+        # family = family.getFamily(curs, uid)
         team = profiles.getTeam(curs, uid)
         return render_template('moreinfo.html', b=basic, c=contact, i=industry, f=family, t=team)
 
@@ -168,7 +166,10 @@ def updateProfile():
             login.insertFamily(curs, uname, fname, ances)
             login.insertTeam(curs, uname, team, ttype, ncity, state, country)
             flash('updated profile!')
-            return redirect(url_for('getProfile', uname))
+            login.insertFamily(curs, uname, fname, ances)
+            login.insertTeam(curs, uname, team, ttype, ncity, state, country)
+            flash('updated profile!')
+            return redirect(url_for('getProfile', username=uname))
         else:
             return redirect(request.referrer)
 
@@ -543,6 +544,14 @@ def getProfile(username):
                 permiss = 1
         
         try: # Determine how much to show on html page
+            permiss
+            return render_template('profile.html', basic=basic, industry=industry, team=team, 
+                                        contact=contact, permiss=permiss)
+        except NameError:
+            npermiss = 1
+            return render_template('profile.html', basic=basic, industry=industry, team=team, 
+                                        contact=contact, npermiss=npermiss)
+
             permiss
             return render_template('profile.html', basic=basic, industry=industry, team=team, 
                                         contact=contact, permiss=permiss)
