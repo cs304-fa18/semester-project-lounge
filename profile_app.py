@@ -24,42 +24,52 @@ def getConn(db):
     conn.autocommit(True)
     return conn
 
-@app.route('/pics/')
-def pics():
+@app.route('/pics/<name>')
+def pic(name):
     conn = getConn('c9')
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
-    curs.execute('select name, pic,filename from picfile inner ')
-    pics = curs.fetchall()
-    return render_template('all_pics.html',pics=pics)
+    numrows = curs.execute('select name, pic,filename from picfile inner join user on pic=username where username =%s ', [name])
+    
+    if numrows == 0:
+        flash('No picture for {}'.format(nm))
+        return redirect(url_for('index'))
+    row = curs.fetchone()
+    val = send_from_directory(app.config['UPLOADS'],row['filename'])
+    return val
+
+    # return render_template('all_pics.html',pics=pics)
 
 
 @app.route('/upload', methods=["POST", "GET"])
 def file_upload():
     if request.method =="GET":
-        return render_template('picForm.html')
+        return render_template('picForm.html', src='',name='')
     else:
         try:
             name= request.form['id'] 
-            f = request.files['file']
+            f = request.files['pic']
             mime_type = imghdr.what(f.stream)
             if mime_type.lower() not in ['jpeg','gif','png']:
                 raise Exception('Not a JPEG, GIF or PNG: {}'.format(mime_type))
             filename = secure_filename('{}.{}'.format(name,mime_type))
             pathname = os.path.join(app.config['UPLOADS'],filename)
             f.save(pathname)
-            flash('Upload successful')
+            
             conn = getConn('c9')
             curs = conn.cursor()
             
-            curs.execute('''update picfile filename=%s where
-                    pic=%s''', [name, filename])
-            return render_template('picForm.html')
+            curs.execute('''update picfile set filename=%s where
+                    pic=%s''', [filename, name])
+            flash('Upload successful')
+            return render_template('picForm.html', src=url_for('pic',name=name),
+                                  name=name)
         except ZeroDivisionError as err:
             flash('Upload failed {why}'.format(why=err))
-            return render_template('picForm.html')
-    
+            return render_template('picForm.html', src=url_for('pic',name=name),
+                                  name=name)
+                                   
     
             
 if __name__ == '__main__':
     app.debug = True
-    app.run('0.0.0.0',8083)
+    app.run('0.0.0.0',8081)
