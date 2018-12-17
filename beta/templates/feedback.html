@@ -1,0 +1,28 @@
+<!--Riann Tang-->
+<!doctype html>
+
+{% extends "index.html" %}
+{% block content %}
+<title>Feedback</title>
+    <body>
+        <h1>Submit Feedback</h1>
+        <p>Have feedback about the site, questions about the team or some words of wisdom? Submit them here!</p>
+        <p>Note: Required fields are denoted with a *</p>
+        <form name="feedbackForm" action={{ url_for('submitFeedback') }} method="POST">
+            <fieldset>
+                <legend>Submit Feedback</legend>
+                <table>
+                    <tr><td><label for="username">Username:</label></td><td><input type="text" name="username" id="username" placeholder="Your username"></td></tr>
+                    <tr><td><label for="date">Date:</label></td><td><input type="text" name="date" id="date" placeholder="YYYY-MM-DD"></td></tr>
+                    <tr><td><label for="subject">Subject:</label></td><td><input type="text" name="subject" id="subject" placeholder="Subject of your message"></td></tr>
+                    <tr><td><label for="message">Message:*</label></td><td><input type="text" name="message" id="message" placeholder="Your message"></td></tr>
+                </table>
+            </fieldset>
+            <p>
+                <input type='submit' value='Submit Feedback'>
+            </p>
+        </form>
+    </body>
+</html>
+{% endblock %}
+

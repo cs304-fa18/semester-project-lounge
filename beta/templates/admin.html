@@ -1,0 +1,17 @@
+<!--Riann Tang-->
+<!doctype html>
+{% extends "index.html" %}
+{% block content %}
+
+<html>
+  <body>
+    <h1>Admin Dashboard</h1>
+    <ul>
+      <li><a href={{ url_for('viewSubmitted') }}>Approve/Delete Events</a></li>
+      <li><a href={{ url_for('viewDonations') }}>View Donations</a></li>
+      <li><a href={{ url_for('viewFeedback') }}>View Feedback</a></li>
+    </ul>
+  </body>
+</html>
+
+{% endblock %}

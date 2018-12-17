@@ -1,0 +1,35 @@
+<!doctype html>
+
+{% extends "index.html" %}
+
+{% block content %}
+
+<body>
+<h1>Create an Account</h1>
+
+<form action={{ url_for('newAccount') }} method="POST">
+    <fieldset>
+        <legend>Account Information</legend>
+        <table>
+            <tr><td><label for="username"> Username:</label></td><td><input type="text" name="username" id="username"></td></tr>
+            <tr><td><label for="password1"> Password:</label></td><td><input type="text" name="password1" id="password1"></td></tr>
+            <tr><td><label for="password2"> Re-enter password:</label></td><td><input type="text" name="password2" id="password2"><br></td></tr>
+            <tr><td><label for="email"> Email:</label></td><td><input type="text" name="email" id="email"></td></tr>
+            <tr><td><label for="security"> Security preferences:<br>
+                <input type="radio" name="sprefs" value="all"> Everyone<br>
+                <input type="radio" name="sprefs" value="class"> Whiptails in my class<br>
+                <input type="radio" name="sprefs" value="overlap"> Whiptails I went to school with<br>
+                <input type="radio" name="sprefs" value="admin"> Just me<br>
+            </td></tr>
+        </table>
+    </fieldset>
+    <p>
+        <input type="submit" id="submit" name="submit" value="Create">
+    </p>
+</form>
+
+</body>
+
+{% endblock %}
+
+</html>

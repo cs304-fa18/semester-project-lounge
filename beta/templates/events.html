@@ -1,0 +1,137 @@
+<!--Lauren Tso-->
+<!doctype html>
+
+{% extends "index.html" %}
+{% block content %}
+
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Events</title>
+    <!--<link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">-->
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script>
+    $( function() {
+        $("#tabs").tabs();
+    } );
+    </script>
+</head>
+
+<body>
+
+<div id="tabs">
+    <ul>
+        <li><a href="#tabs-1">Upcoming</a></li>
+        <li><a href="#tabs-2">Past</a></li>
+      </ul>
+    <div id="tabs-1">
+        <div class="event-grid" style="display:grid; grid-template-columns:250px 250px 250px; padding:10px;
+                                       grid-column-gap: 10px; grid-row-gap: 15px;">
+        {% for event, id in up %}
+            <div id="event-card" data-id="{{id}}-{{event.edate}}" style="background-color: white;padding:20px; 
+                                                                         border: 1px solid rgba(0, 0, 0, 0.8);
+                                                                         text-align:left">
+                <div id="cover-photo">
+                    <img src="/static/event.png" style="max-width:100%">
+                </div>
+                <div class="info">
+                    <div class="name">{{event.ename}}</div>
+                    <div class="desc">{{event.description}}</div>
+                    <div class="date"><img src="/static/calendar.png" style="max-width:15%"> {{event.edate}}</div>
+                    <div class="location"><img src="/static/location.png" style="max-width:15%"> {{event.city}}, {{event.state}} {{event.country}}</div>
+                    <div class="rsvp">RSVPs: {{event.rsvps}}</div>
+                    <div class="more">
+                        <form method="post" action="/moreEvent/">
+                            <input type="hidden" name="name" value="{{event.ename}}">
+                            <input type="hidden" name="date" value="{{event.edate}}">
+                            <input type="submit" name="submit" value="More Info!">
+                        </form>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+        </div>
+    </div>
+    <div id="tabs-2">
+        <div class="event-grid" style="display:grid; grid-template-columns:250px 250px 250px; padding:10px;
+                                       grid-column-gap: 10px; grid-row-gap: 15px;">
+        {% for event, id in past %}
+            <div id="event-card" data-id="{{id}}-{{event.edate}}" style="background-color: white; padding:20px; 
+                                                                         border: 1px solid rgba(0, 0, 0, 0.8);
+                                                                         text-align:left">
+                <div id="cover-photo">
+                    <img src="/static/event.png" style="max-width:100%">
+                </div>
+                <div class="info">
+                    <div class="name">{{event.ename}}</div>
+                    <div class="desc">{{event.description}}</div>
+                    <div class="date"><img src="/static/calendar.png" style="max-width:15%"> {{event.edate}}</div>
+                    <div class="location"><img src="/static/location.png" style="max-width:15%"> {{event.city}}, {{event.state}} {{event.country}}</div>
+                    <div class="rsvp">RSVPs: {{event.rsvps}}</div>
+                    <div class="more">
+                        <form method="post" action="/moreEvent/">
+                            <input type="hidden" name="name" value="{{event.ename}}">
+                            <input type="hidden" name="date" value="{{event.edate}}">
+                            <input type="submit" name="submit" value="More Info!">
+                        </form>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+        </div>
+    </div>
+</div>
+ 
+<div id = "create-event-button">
+    <form method="post" action="/createEvent/">
+    <input type="submit" name="submit" value="Create Event!">
+    </form>
+</div>
+
+</body>
+</html>
+
+<script>
+    // toggle progressive enhancement on click
+    var progressive_on = false;
+    $("#progressive_enhancement").on('click', function () {
+        if(progressive_on) {
+          // turn it off
+           $("input[name=rsvp]").show(); 
+          $("#progressive_enhancement").text('Turn on Progressive Enhancement'); // change text of button
+           progressive_on = false; 
+        } 
+        else {
+          // turn it on
+           $("input[name=rsvp]").hide();
+          $("#progressive_enhancement").text('Turn off Progressive Enhancement'); // change text of button
+           progressive_on = true; 
+        }
+    });
+    
+    var URL = "{{url_for('rsvpEventAjax')}}"; // set URL for Ajax updating
+
+    function updateRSVP(obj) {
+        var $row = $("[data-id="+obj.eid+"-"+obj.date+"]"); 
+        console.log('row is ' + $row)
+        console.log('text is ' + $row.find(".rsvps").val())
+        $row.find(".rsvps").text(obj.rsvp); 
+    }
+    
+    // define action on clicking a rating
+    $("#events-list").on("click",".rsvps",function(event) {
+        if (!progressive_on) { // do not act if progressive enhancement is off
+            return
+        }
+        else { 
+            var $row = $(this).closest("tr");
+            var name = $row.find('.name');
+            var date = $row.find('.date');
+            console.log('name is ' + name.text() + ' date is ' + date.text())
+            $.post(URL, {name: name.text(), date: date.text()}, updateRSVP) // send and retrieve rating information from jsonify
+        }
+    });
+    
+</script>
+{% endblock %}
