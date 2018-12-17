@@ -78,7 +78,6 @@ def loginuser():
         if row is None:
             # Same response as wrong password, so no information about what went wrong
             flash('login incorrect. Try again or join')
-            return redirect( url_for('index'))
         hashed = row['password']
         utype = row['user_type']
         # strings always come out of the database as unicode objects

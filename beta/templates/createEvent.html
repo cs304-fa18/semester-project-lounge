@@ -1,0 +1,24 @@
+{% extends "index.html" %}
+{% block content %}
+
+<div id = create-event>
+   
+<form action="{{url_for('submitEvent')}}" method="POST">
+    <fieldset>
+        <legend>Event Data</legend>
+        <table>
+            <tr><td><label for="name" accesskey="n"> Event Name *:</label></td><td><input type="text" name="name" id="name" placeholder="Name"></td></tr>
+            <tr><td><label for="city" accesskey="c"> Event City:</label></td><td><input type="text" name="city" id="city" placeholder="City"></td></tr>
+            <tr><td><label for="state" accesskey="s"> Event State:</label></td><td><input type="text" name="state" id="state" placeholder="State"></td></tr>
+            <tr><td><label for="country" accesskey="o"> Event Country:</label></td><td><input type="text" name="country" id="country" placeholder="Country"></td></tr>
+            <tr><td><label for="desc" accesskey="d"> Event Description:</label></td><td><input type="text" name="desc" id="desc" placeholder="Description"></td></tr>
+            <tr><td><label for="date" accesskey="a"> Event Date *:</label></td><td><input type="text" name="date" id="date" placeholder="YYYY-MM-DD"></td></tr>
+        </table>
+    </fieldset>
+    <p>
+        <input type='submit' value='Submit Event'>
+    </p>
+</form>
+</div>
+
+{% endblock %}

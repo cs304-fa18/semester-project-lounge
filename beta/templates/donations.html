@@ -1,0 +1,36 @@
+<!--Riann Tang-->
+<!doctype html>
+
+{% extends "index.html" %}
+{% block content %}
+<title>Donate</title>
+    <body>
+        <h1>Donate to the Whiptails</h1>
+        <p>Thank you so much for your support of the Wellelsey Whiptails! If you
+        would like to donate gently used athletic gear such as uniforms or cleats, please fill out the form
+        below. Monetary donations should be done via the <a href="https://www.givecampus.com/campaigns/5218/donations/new"
+        target="_blank">official Wellesley giving page</a>. 
+        Just select the designation as "Other" and specify "Ultimate Frisbee".</p>
+        <p>Note: Required fields are denoted with a *</p>
+        <form name="donationsForm" action={{ url_for('submitDonation') }} method="POST">
+            <fieldset>
+                <legend>Make Donation</legend>
+                <table>
+                    <tr><td><label for="username">Username:* </label><input type="text" name="username" id="username" placeholder="Your username"></td></tr>
+                    <tr><td><label for="item">Item Type:* </label><select name="item">
+                        <option value="" disabled selected>Select item</option>
+                        <option value="cleats">Cleats</option>
+                        <option value="uniform">Uniform</option>
+                        <option value="other">Other</option>
+                      </select></td></tr>
+                    <tr><td><label for="description">Description:* </label><input type="text" name="description" id="description" placeholder="Specify size and other details"></td></tr>
+                </table>
+            </fieldset>
+            <p>
+                <input type='submit' value='Submit Donation' class="button">
+            </p>
+        </form>
+    </body>
+</html>
+{% endblock %}
+

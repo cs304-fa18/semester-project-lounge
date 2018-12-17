@@ -1,0 +1,41 @@
+<!--Lauren Tso-->
+<!doctype html>
+
+{% extends "index.html" %}
+{% block content %}
+
+<title>Family</title>
+<body>
+    
+    <h1>Family Trees</h1>
+
+    <form id="search" method="POST" action="/familySearch/">
+        <input id="searchterm" placeholder="Search" name="searchterm">
+        <button id="searchbutton" type="submit" name="submit" value="Search"> Search </button> 
+    </form>
+
+    {% for name in names %}
+        <table id="family-list">
+            <tr>
+                <th>Family Name</th>
+                <th>Member</th>
+                <th>Year</th>
+            </tr>
+            </tr>
+            {% for family in families %}
+                {% if family.name == name %}
+                    <tr class = "member" data-id="{{family.name}}">
+                        <td class="fname">{{family.name}}</td>
+                        <td class="name">{{family.uname}}</td>
+                        <td class="year">{{family.classyear}}</td>
+                    </tr>
+                {% endif %}
+            {% endfor %}
+        </table>
+        <br>
+    {% endfor %}
+ 
+</body>
+</html>
+
+{% endblock %}

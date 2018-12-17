@@ -1,0 +1,91 @@
+<!doctype html>
+
+<html lang='en'>
+<head>
+    <meta charset="utf-8">
+    <meta name=authors content="Riann Tang, Lauren Tso, Tamara Deshong">
+    <meta name=description content="">
+    <meta name=keywords content="">  
+    <link href="https://fonts.googleapis.com/css?family=Raleway" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">
+    <link rel='stylesheet' href="{{url_for('static',filename='styling.css')}}">
+</head>
+<title>Lounge</title>
+
+<body>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+
+<div class="header">
+    <a href={{ url_for('index') }}><img src="/static/logo.jpg" alt="Lounge Logo" id="logo"></a>
+    <ul>
+      <li><a href={{ url_for('index') }}>Home</a></li>
+      <li><a href={{ url_for('messaging') }}>Messages</a></li>
+      <li><a href={{ url_for('viewApproved') }}>Events</a></li>
+      <li><a href={{ url_for('makeDonation') }}>Donate</a></li>
+      <li><a href={{ url_for('giveFeedback') }}>Feedback</a></li>
+      <li><a href={{ url_for('getFamily') }}>Family</a><li>
+      <li><a href={{ url_for('adminBoard') }}>Admins</a></li>
+    </ul>
+</div>
+
+<!--display all flashed messages-->
+{% with messages = get_flashed_messages() %}
+    {% if messages %}
+        <div id="messages">
+        {% for message in messages %}
+            <p>{{ message }}</p>
+        {% endfor %}
+        </div>
+    {% endif %}
+{% endwith %}
+
+{% block content %}
+
+<h1>Welcome!</h1>
+
+<html>
+    <body>
+        <div id="login" style="width: 100%; overflow: hidden;">
+            <div id="log" style="width: 600px; float: left;">
+                {% if logout %}
+                    <p>Log in!
+                    <form action={{ url_for('loginuser') }} method="POST">
+                        <input type="text" name="uid" placeholder="username"><br>
+                        <input type="text" name="pwd" placeholder="password"><br>
+                        <input type="submit" id="submit" name="submit" value="Log In">
+                    </form>
+                {% else %}
+                    <p>Logged in as {{uid}}</p>
+                {% endif %}
+            </div>
+            <div id="create" style="margin-left: 620px;">
+                <p>Don't have an account? Make one.
+                <form method="post" action="{{url_for('account')}}">
+                    <input type="submit" id="submit" name="submit" value="Create Account">
+                </form>
+                </p>
+            </div>
+            <div id="complete" style="margin-left: 620px;">
+                <p>Have an account? Update it.
+                <form method="post" action="{{url_for('completeProfile')}}"> 
+                    <input type="submit" id="submit" name="submit" value="Complete Profile">
+                </form>
+                </p>
+            </div>
+            <div id="logout" style="margin-left: 620px;">
+                <p>Wanna log out? Do it.
+                <form method="post" action="{{url_for('logout')}}"> 
+                    <input type="submit" id="submit" name="submit" value="Log Out">
+                </form>
+                </p>
+            </div>
+        </div>
+    </body>
+
+<p></p>Lounge is a Whiptail database where current members and alumnae of the Wellesley 
+ultimate frisbee team can more easily connect for fundraising, networking, and 
+socializing.</p>
+
+{% endblock %}
+</html>
