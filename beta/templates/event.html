@@ -99,7 +99,10 @@
     function listRSVP(obj) {
         $(".people ul").empty()
         rsvps = obj.rsvps
+        unames = obj.unames
         for (var i = 0; i < rsvps.length; i++) {
+            var uname = obj.unames[i]
+            var $profile = "{{ url_for('getProfile', username=uname) }}"
             $(".people ul").append($('<li>').text(rsvps[i]));
             
         }
