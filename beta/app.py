@@ -309,8 +309,9 @@ def findRSVPsAjax():
     name = request.form.get('name')
     date = request.form.get('date')
     rsvps = events.getPeople(curs, name, date)
+    unames = [rsvp['username'] for rsvp in rsvps]
     str_rsvps = [rsvp['name'] for rsvp in rsvps]
-    return jsonify({'rsvps': str_rsvps})
+    return jsonify({'rsvps': str_rsvps, 'unames':unames})
 
 @app.route('/messages/')
 def messaging():
