@@ -11,12 +11,10 @@ lock = Lock()
 
 @app.route('/')
 def index():
-    if session.get('uid') == None or session.get('uid') == '':
-        return render_template('index.html', logout='yes')
+    if session.get('uid') == None:
+        return render_template('notLI.html')
     else:
-        print(session.get('uid'))
-        uid = session.get('uid')
-        return render_template('index.html', uid=uid)
+        return render_template('LI.html')
 
 @app.route('/admin/')
 def adminBoard():
@@ -69,9 +67,12 @@ def newAccount():
         if login.findUser(curs, uname) is not None:
             flash('That username is taken')
             return redirect(url_for('index'))
+        flash("Account for new user {} has been created. Please fill out the rest of your info. Fields marked with * are required".format(uname))
         login.insertUser(curs, email, uname, hashed, sprefs)
-        flash('Thanks for creating in account. Try logging in now!')
-        return redirect(url_for('index'))
+        session['uid'] = uname
+        session['logged_in'] = True
+        session['utype'] = "regular"
+        return redirect(url_for('completeProfile'))
             
 @app.route('/login/', methods=['POST'])
 def loginuser():
@@ -114,13 +115,13 @@ def logout():
             return redirect(url_for('index'))
     except Exception as err:
         flash('some kind of error '+str(err))
-        return redirect( url_for('index') )
+        return redirect( url_for('index'))
 
 @app.route('/completeProfile/', methods=['GET', 'POST'])
 def completeProfile():
     if session.get('uid') == None:
         flash("Need to log in")
-        return render_template('index.html')
+        return redirect( url_for('index'))
     else:
         curs = conn.getConn()
         uid = session.get('uid')
@@ -135,7 +136,7 @@ def completeProfile():
 def updateProfile():
     if session.get('uid') == None:
         flash("Need to log in")
-        return render_template('index.html')
+        return redirect( url_for('index'))
     else:
         uname = session.get('uid')
         name = request.form.get("name")
@@ -167,7 +168,7 @@ def updateProfile():
             login.insertFamily(curs, uname, fname, ances)
             login.insertTeam(curs, uname, team, ttype, ncity, state, country)
             flash('updated profile!')
-            return redirect(url_for('index'))
+            return redirect(url_for('getProfile', uname))
         else:
             return redirect(request.referrer)
 
@@ -373,7 +374,7 @@ def submitDonation():
     """Submits donation by inserting the data into the donation table"""
     if session.get('uid') == None:
         flash("Need to log in")
-        return render_template('index.html')
+        return redirect( url_for('index'))
     else:
         error = False
         uname = request.form.get('username')
