@@ -11,7 +11,10 @@ lock = Lock()
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    if session.get('uid') == None:
+        return render_template('notLI.html')
+    else:
+        return render_template('LI.html')
 
 @app.route('/admin/')
 def adminBoard():
@@ -99,9 +102,9 @@ def loginuser():
 @app.route('/logout/', methods=['POST'])
 def logout():
     try:
-        if 'username' in session:
-            username = session['username']
-            session.pop('username')
+        if 'uid' in session:
+            username = session['uid']
+            session.pop('uid')
             session.pop('logged_in')
             flash('{} is logged out'.format(username))
             return redirect(url_for('index'))
@@ -120,7 +123,7 @@ def completeProfile():
 def updateProfile():
     if session.get('uid') == None:
         flash("Need to log in")
-        return render_template('index.html')
+        return redirect(url_for('index'))
     else:
         uname = session.get('uid')
         name = request.form.get("name", '')
@@ -163,7 +166,7 @@ def updateProfile():
 def viewApproved():
     if session.get('uid') == None:
         flash("Need to log in")
-        return render_template('index.html')
+        return redirect(url_for('index'))
     else:
         curs = conn.getConn()
         up_events = events.getEvents(curs, 1)
@@ -200,7 +203,7 @@ def moreEvent():
 def viewSubmitted():
     if session.get('uid') == None:
         flash("Need to log in")
-        return render_template('index.html')
+        return redirect(url_for('index'))
     else:
         if session.get('utype') == 'regular':
             flash('Not accessible for regular users')
@@ -223,7 +226,7 @@ def createEvent():
 def submitEvent():
     if session.get('uid') == None:
         flash("Need to log in")
-        return render_template('index.html')
+        return redirect(url_for('index'))
     else:
         error = False
         name = request.form.get('name')
@@ -305,7 +308,7 @@ def messaging():
     """Returns html page with necessary data to populate messaging page."""
     if session.get('uid') == None:
         flash("Need to log in")
-        return render_template('index.html')
+        return redirect(url_for('index'))
     else:
         uid = session['uid']
         curs = conn.getConn()
@@ -350,7 +353,7 @@ def makeDonation():
     """Returns html page populated with donation form"""
     if session.get('uid') == None:
         flash("Need to log in")
-        return render_template('index.html')
+        return redirect(url_for('index'))
     else:
         return render_template('donations.html')  
 
@@ -359,7 +362,7 @@ def submitDonation():
     """Submits donation by inserting the data into the donation table"""
     if session.get('uid') == None:
         flash("Need to log in")
-        return render_template('index.html')
+        return redirect(url_for('index'))
     else:
         error = False
         uname = request.form.get('username')
@@ -392,14 +395,14 @@ def viewDonations():
     """Returns html page populated with data of all submitted donations"""
     if session.get('uid') == None:
         flash("Need to log in")
-        return render_template('index.html')
+        return redirect(url_for('index'))
     else: 
         if session.get('utype') == 'regular': # Make sure user is an admin
             flash('Not accessible for regular users')
             return redirect(url_for('makeDonation'))
         else:
             curs = conn.getConn()
-            oldDonations = donations.getOldDonations(curs)
+            oldDonations = donations.oldDonations(curs)
             newDonations = donations.getNewDonations(curs)
             return render_template('viewDonations.html', oldDonations=oldDonations, newDonations=newDonations)
 
@@ -420,7 +423,7 @@ def giveFeedback():
     """Return html page with feedback form"""
     if session.get('uid') == None:
         flash("Need to log in")
-        return render_template('index.html')
+        return redirect(url_for('index'))
     else: 
         return render_template('feedback.html') 
 
@@ -457,7 +460,7 @@ def viewFeedback():
     """Return all submitted feedback in html page"""
     if session.get('uid') == None:
         flash("Need to log in")
-        return render_template('index.html')
+        return redirect(url_for('index'))
     else: 
         if session.get('utype') == 'regular': # Make sure user is an admin
             flash('Not accessible for regular users')
@@ -477,7 +480,7 @@ def redirect_url():
 def getFamily(searchterm):
     if session.get('uid') == None:# Not logged in yet
         flash("Need to log in")
-        return render_template('index.html') # Go to a temporary login 
+        return redirect(url_for('index')) 
     else:
         curs = conn.getConn()
         families = family.getFamily(curs, searchterm)
@@ -491,13 +494,12 @@ def getProfile(username):
     currentU = session.get('uid')
     if currentU == None:
         flash("Need to log in")
-        return render_template('index.html')
+        return redirect(url_for('index'))
+    
+    if currentU == username: # Check if viewing own profile
+        isSelf = 1;
         
     curs = conn.getConn()
-
-    # check = profiles.checkPerson(curs, username)
-    # if len(check) == 0:
-    #     return render_template('search.html', dne=1)
 
     #Get all the user's info
     basic = profiles.getBasicInfo(curs, username)
@@ -509,7 +511,7 @@ def getProfile(username):
     prefs = profiles.getSecurityPrefs(curs, username)['sprefs']
 
     if session.get('utype') == 'admin': #Admins can always view all info
-        permiss =1 
+        permiss = 1 
     elif prefs == "all":
         permiss = 1
     elif prefs == "class":
@@ -522,18 +524,28 @@ def getProfile(username):
     
     try: # Determine how much to show on html page
         permiss
-        return render_template('profile.html', basic=basic, industry=industry, team=team, 
-                                contact=contact, permiss=permiss)
+        try: # Determine how much to show on html page
+            isSelf
+            return render_template('profile.html', basic=basic, industry=industry, team=team, 
+                                    contact=contact, permiss=permiss, isSelf=isSelf)
+        except NameError:
+            return render_template('profile.html', basic=basic, industry=industry, team=team, 
+                                    contact=contact, permiss=permiss)
     except NameError:
         npermiss = 1
-        return render_template('profile.html', basic=basic, industry=industry, team=team, 
-                                contact=contact, npermiss=npermiss)
+        try: # Determine how much to show on html page
+            isSelf 
+            return render_template('profile.html', basic=basic, industry=industry, team=team, 
+                                    contact=contact, npermiss=npermiss, isSelf=isSelf)
+        except NameError:
+            return render_template('profile.html', basic=basic, industry=industry, team=team, 
+                                    contact=contact, npermiss=npermiss)
 
 @app.route("/search", methods=["GET", "POST"])
 def searchPerson():
     if session.get('uid') == None:# Not logged in yet
         flash("Need to log in")
-        return render_template('index.html') # Go to a temporary login 
+        return redirect(url_for('index'))
     if request.method == 'GET':
         return render_template('search.html')
     else:
@@ -545,21 +557,6 @@ def searchPerson():
             flash("enter something to filter your search by")
             return render_template('search.html')
 
-                
-        searchItems = []
-        if name!="":
-            searchItems.append(["name", "%"+name+"%"])
-        if year !="" and year.isdigit():
-            searchItems.append(["classyear","%"+year+"%" ])
-        if indust !="":
-            searchItems.append(["iname","%"+indust+"%" ])
-        
-        transpose = zip(*searchItems)
-        
-        curs = conn.getConn()
-        table = search.search(curs, transpose)
-        
-        return render_template('search.html', table=table)
 
 if __name__ == '__main__':
     app.debug = True

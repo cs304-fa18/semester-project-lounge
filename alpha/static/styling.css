@@ -200,3 +200,7 @@ fieldset {
 #contact {
     flex: 33%;
 }
+
+#complete {
+    float:center;
+}

@@ -1,4 +1,4 @@
-use lounge_db;
+use c9;
 
 delete from messages;
 
