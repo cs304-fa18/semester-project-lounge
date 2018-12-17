@@ -327,6 +327,7 @@ def messaging():
         allMsgs = messages.getMessageHistory(curs, uid) # Get people user has messaged/received messages from
         allK = list(allMsgs.keys())
         mPreview = [messages.getLastM(curs,uid, allK[i]) for i in range(0,len(allK))]
+        print mPreview
         num = [i for i in range(0,len(allMsgs))]
         return render_template('messages.html', num=num, msgs=allMsgs, mKeys=allK, mPrev=mPreview)
 
@@ -492,18 +493,14 @@ def redirect_url():
 def getFamily(searchterm):
     if session.get('uid') == None:# Not logged in yet
         flash("Need to log in")
-        return redirect(url_for('index')) 
+        return redirect(url_for('index'))
     else:
         curs = conn.getConn()
-        names_dict = family.findFamily(curs, searchterm)
-        if len(names_dict) == 0:
-            flash('No names match this search')
-            return redirect(request.referrer) 
-        else:
-            families = family.getFamily(curs, names_dict)
-            names_all = [fam['name'] for fam in families]
-            names = list(set(names_all))
-            return render_template('family.html', families=families, names=names)
+        families = family.getFamily(curs, searchterm)
+        names_all = [fam['name'] for fam in families]
+        names = list(set(names_all))
+        return render_template('family.html', families=families, names=names)
+
         
 @app.route('/profile/<username>/', methods=['GET'])
 def getProfile(username):
@@ -512,12 +509,11 @@ def getProfile(username):
     if currentU == None:
         flash("Need to log in")
         return redirect(url_for('index'))
-        
+    
+    if currentU == username: # Check if viewing own profile
+        isSelf = 1;
+            
     curs = conn.getConn()
-
-    # check = profiles.checkPerson(curs, username)
-    # if len(check) == 0:
-    #     return render_template('search.html', dne=1)
 
     #Get all the user's info
     basic = profiles.getBasicInfo(curs, username)
@@ -525,31 +521,38 @@ def getProfile(username):
     team = profiles.getTeam(curs, username)
     contact = profiles.getContactInfo(curs, username)
     
-    #Check user's security preferences and whether person viewing profiles matches prefs
-    prefs = profiles.getSecurityPrefs(curs, username)['sprefs']
-
-    if session.get('utype') == 'admin': #Admins can always view all info
-        permiss =1 
-    elif prefs == "all":
-        permiss = 1
-    elif prefs == "class":
-        if profiles.getYear(curs, username) == profiles.getYear(curs, currentU):
-            print "same class"
-            permiss = 1
-    elif prefs == "overlap":
-        if profiles.getOverlap(curs, username, currentU) == 1:
-            permiss = 1
-    
-    try: # Determine how much to show on html page
-        permiss
+    try: # If viewing own profile
+        isSelf
+        permiss=1
         return render_template('profile.html', basic=basic, industry=industry, team=team, 
-                                contact=contact, permiss=permiss)
+                                contact=contact, permiss=permiss, isSelf=isSelf)
     except NameError:
-        npermiss = 1
-        return render_template('profile.html', basic=basic, industry=industry, team=team, 
-                                contact=contact, npermiss=npermiss)
+        #Check user's security preferences and whether person viewing profiles matches prefs
+        prefs = profiles.getSecurityPrefs(curs, username)['sprefs']
+    
+        if session.get('utype') == 'admin': #Admins can always view all info
+            permiss = 1 
+        elif prefs == "all":
+            permiss = 1
+        elif prefs == "class":
+            if profiles.getYear(curs, username) == profiles.getYear(curs, currentU):
+                print "same class"
+                permiss = 1
+        elif prefs == "overlap":
+            if profiles.getOverlap(curs, username, currentU) == 1:
+                permiss = 1
+        
+        try: # Determine how much to show on html page
+            permiss
+            return render_template('profile.html', basic=basic, industry=industry, team=team, 
+                                        contact=contact, permiss=permiss)
+        except NameError:
+            npermiss = 1
+            return render_template('profile.html', basic=basic, industry=industry, team=team, 
+                                        contact=contact, npermiss=npermiss)
 
-@app.route("/search", methods=["GET", "POST"])
+        
+@app.route("/search/", methods=["GET", "POST"])
 def searchPerson():
     if session.get('uid') == None:# Not logged in yet
         flash("Need to log in")
