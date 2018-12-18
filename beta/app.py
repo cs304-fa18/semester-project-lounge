@@ -142,7 +142,6 @@ def completeProfile():
         industry = profiles.getIndustry(curs, uid)
         fam = family.getUserFamily(curs, uid)
         team = profiles.getTeam(curs, uid)
-        print('*****' + str(team))
         picture = profiles.getPic(curs,uid)
         return render_template('moreinfo.html', b=basic, c=contact, i=industry, f=fam, t=team, p=picture)
 
