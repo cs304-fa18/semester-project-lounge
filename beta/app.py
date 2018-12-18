@@ -181,7 +181,7 @@ def updateProfile():
             mime_type = imghdr.what(f.stream)
             if mime_type.lower() not in ['jpeg','gif','png']:
                 raise Exception('Not a JPEG, GIF or PNG: {}'.format(mime_type))
-            filename = secure_filename('{}.{}'.format(name,mime_type))
+            filename = secure_filename('{}.{}'.format(uname,mime_type))
             pathname = os.path.join(app.config['UPLOADS'],filename)
             f.save(pathname)
             
