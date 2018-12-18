@@ -1,16 +1,24 @@
-from flask import (Flask, url_for, flash, render_template, request, redirect, session, jsonify)
+from flask import (Flask, url_for, flash, render_template, request, 
+     redirect, session, jsonify, make_response, send_from_directory, Response)
+
 from datetime import date, datetime
 from threading import Thread, Lock
 import events, messages, family, login, donations, feedback, conn, profiles, search
 from werkzeug import secure_filename
 import bcrypt
+import imghdr
+import MySQLdb
+import sys, os
 
 app = Flask(__name__)
 app.secret_key = "notverysecret"
+app.config['TRAP_BAD_REQUEST_ERRORS'] = True
+app.config['UPLOADS'] = 'uploads'
 lock = Lock()
 
 @app.route('/')
 def index():
+    '''return template with appropriate login display'''
     if session.get('uid') == None or session.get('uid') == '':
         return render_template('index.html', logout='yes')
     else:
@@ -20,6 +28,7 @@ def index():
 
 @app.route('/admin/')
 def adminBoard():
+    '''return admin page viewable only to admin users'''
     if session.get('uid') == None:
         flash("Need to log in")
         return redirect(request.referrer)
@@ -31,10 +40,12 @@ def adminBoard():
 
 @app.route('/account/', methods=['GET', 'POST'])
 def account():
+    '''return template to create a new account'''
     return render_template('userinfo.html')
 
 @app.route('/createAccount/', methods=['GET', 'POST'])
 def newAccount():
+    '''create a new account and insert user into database'''
     if request.method == 'GET':
         return redirect(url_for('account'))
     if request.method == 'POST':
@@ -65,16 +76,18 @@ def newAccount():
              return redirect(request.referrer)
 
         curs = conn.getConn()
-        hashed = bcrypt.hashpw(pwd1.encode('utf-8'), bcrypt.gensalt())
+        hashed = bcrypt.hashpw(pwd1.encode('utf-8'), bcrypt.gensalt()) # salt password for security
         if login.findUser(curs, uname) is not None:
             flash('That username is taken')
             return redirect(url_for('index'))
         login.insertUser(curs, email, uname, hashed, sprefs)
+        login.insertPic(curs, uname, 'default.jpg')
         flash('Thanks for creating in account. Try logging in now!')
         return redirect(url_for('index'))
             
 @app.route('/login/', methods=['POST'])
 def loginuser():
+    '''log in a user and set their status as a user'''
     try:
         username = request.form.get('uid')
         passwd = request.form.get('pwd')
@@ -90,7 +103,6 @@ def loginuser():
             flash('successfully logged in as '+ username)
             session['uid'] = username
             session['logged_in'] = True
-            session['visits'] = 1
             session['utype'] = utype
             return redirect(url_for('index'))
         else:
@@ -102,6 +114,7 @@ def loginuser():
 
 @app.route('/logout/', methods=['POST'])
 def logout():
+    '''logout a user and set the session appropriately'''
     try:
         if session.get('uid') == None:
             flash('you are not logged in. Please login or join')
@@ -118,6 +131,7 @@ def logout():
 
 @app.route('/completeProfile/', methods=['GET', 'POST'])
 def completeProfile():
+    '''return template to complete a user's profile'''
     if session.get('uid') == None:
         flash("Need to log in")
         return render_template('index.html')
@@ -129,10 +143,12 @@ def completeProfile():
         industry = profiles.getIndustry(curs, uid)
         family = profiles.getFamily(curs, uid)
         team = profiles.getTeam(curs, uid)
-        return render_template('moreinfo.html', b=basic, c=contact, i=industry, f=family, t=team)
+        picture = profiles.getPic(curs,uid)
+        return render_template('moreinfo.html', b=basic, c=contact, i=industry, f=family, t=team, p=picture)
 
 @app.route('/updateProfile/', methods=['POST'])
 def updateProfile():
+    '''update profile for filled in items and picture'''
     if session.get('uid') == None:
         flash("Need to log in")
         return render_template('index.html')
@@ -158,21 +174,40 @@ def updateProfile():
         if year != 'None' and not year.isdigit():
             error = True
             flash("Invalid class year")
+            
+        curs = conn.getConn()
+        try:
+            f = request.files['pic']
+            mime_type = imghdr.what(f.stream)
+            if mime_type.lower() not in ['jpeg','gif','png']:
+                raise Exception('Not a JPEG, GIF or PNG: {}'.format(mime_type))
+            filename = secure_filename('{}.{}'.format(name,mime_type))
+            pathname = os.path.join(app.config['UPLOADS'],filename)
+            f.save(pathname)
+            
+            
+            curs.execute('''update picfile set filename=%s where
+                    pic=%s''', [filename, uname])
+            
+        except ZeroDivisionError as err:
+            flash('Upload failed {why}'.format(why=err))
+            return redirect(request.referrer)
         
         if not error:
-            curs = conn.getConn()
             login.updateUser(curs, uname, name, nname, phnum, year)
                     
             login.insertIndustry(curs, uname, industry)
             login.insertFamily(curs, uname, fname, ances)
             login.insertTeam(curs, uname, team, ttype, ncity, state, country)
-            flash('updated profile!')
+            flash('Updated profile!')
+            flash('Upload successful')
             return redirect(url_for('index'))
         else:
             return redirect(request.referrer)
 
 @app.route('/approved/')
 def viewApproved():
+    '''display past and upcoming approved (1) events'''
     if session.get('uid') == None:
         flash("Need to log in")
         return redirect(url_for('index'))
@@ -188,6 +223,7 @@ def viewApproved():
 
 @app.route('/events/<eid>', methods=['GET'])
 def listEvent(eid):
+    '''display more info on a specific event'''
     curs = conn.getConn()
     new_id = eid.split('_')
     name = new_id[0]
@@ -206,6 +242,7 @@ def listEvent(eid):
     
 @app.route('/moreEvent/', methods=['POST'])
 def moreEvent():
+    '''redirect user to single event card with more info'''
     name = request.form.get('name')
     date = request.form.get('date')
     eid = str(name) + '_' + str(date)
@@ -213,6 +250,7 @@ def moreEvent():
 
 @app.route('/submitted/')
 def viewSubmitted():
+    '''view past and upcoming submitted (0) events'''
     if session.get('uid') == None:
         flash("Need to log in")
         return redirect(url_for('index'))
@@ -232,10 +270,12 @@ def viewSubmitted():
             
 @app.route('/createEvent/', methods=['GET', 'POST'])
 def createEvent():
+    '''return template to create an event'''
     return render_template('createEvent.html')
 
 @app.route('/submitEvent/', methods=['POST'])
 def submitEvent():
+    '''submit an event to be approved by admins'''
     if session.get('uid') == None:
         flash("Need to log in")
         return redirect(url_for('index'))
@@ -271,6 +311,7 @@ def submitEvent():
 
 @app.route('/approveDeleteEvent/', methods=['POST'])
 def approveDeleteEvent():
+    '''approve or delete an event by an admin only'''
     curs = conn.getConn()
     name = request.form.get('name')
     date = request.form.get('date')
@@ -288,6 +329,7 @@ def approveDeleteEvent():
         
 @app.route('/rsvpEvent/', methods=['POST'])
 def rsvpEvent():
+    '''update rsvps on page through flask'''
     curs = conn.getConn()
     name = request.form.get('name')
     date = request.form.get('date')
@@ -296,6 +338,7 @@ def rsvpEvent():
     
 @app.route('/rsvpEventAjax/', methods=['POST'])
 def rsvpEventAjax():
+    '''update rsvps on page through ajax'''
     curs = conn.getConn()
     name = request.form.get('name')
     eid = name.replace(' ', '')
@@ -306,6 +349,7 @@ def rsvpEventAjax():
 
 @app.route('/findRSVPsAjax/', methods=['POST'])
 def findRSVPsAjax():
+    '''list rsvps on page through ajax'''
     curs = conn.getConn()
     name = request.form.get('name')
     date = request.form.get('date')
@@ -489,6 +533,7 @@ def redirect_url():
 @app.route('/family/', defaults={'searchterm':''}) # defaults to showing all families
 @app.route('/family/<searchterm>/', methods=['GET'])
 def getFamily(searchterm):
+    '''return all or selected family trees'''
     if session.get('uid') == None:# Not logged in yet
         flash("Need to log in")
         return redirect(url_for('index')) 
@@ -523,6 +568,7 @@ def getProfile(username):
     industry = profiles.getIndustry(curs, username)
     team = profiles.getTeam(curs, username)
     contact = profiles.getContactInfo(curs, username)
+    pic = profiles.getPic(curs, username)
     
     #Check user's security preferences and whether person viewing profiles matches prefs
     prefs = profiles.getSecurityPrefs(curs, username)['sprefs']
@@ -542,7 +588,8 @@ def getProfile(username):
     try: # Determine how much to show on html page
         permiss
         return render_template('profile.html', basic=basic, industry=industry, team=team, 
-                                contact=contact, permiss=permiss)
+                                contact=contact, permiss=permiss, 
+                                pic = url_for('pic',name=username))
     except NameError:
         npermiss = 1
         return render_template('profile.html', basic=basic, industry=industry, team=team, 
@@ -579,6 +626,26 @@ def searchPerson():
         table = search.search(curs, transpose)
         
         return render_template('search.html', table=table)
+
+@app.route('/pics/<name>')
+def pic(name):
+    curs = conn.getConn()
+    numrows = curs.execute('select filename from picfile where pic=%s ', [name])
+    
+    # if numrows == 0:
+    #     flash('No picture for {}'.format(name))
+    #     return redirect(url_for('index'))
+    row = curs.fetchone()
+    val = send_from_directory(app.config['UPLOADS'],row['filename'])
+    return val
+
+
+
+
+
+
+
+
 
 if __name__ == '__main__':
     app.debug = True

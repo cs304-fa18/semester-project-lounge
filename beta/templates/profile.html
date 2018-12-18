@@ -8,6 +8,9 @@
         <div id ="profHead">
             <h1>{{basic.name}} "{{basic.nickname}}"</h1>
             <p>Class of {{basic.classyear}}</p>
+            <p><img src= {{pic}} width="200" height ="200"></p>
+
+
             <form id="userForm">
                 <input type="hidden" name="uname" value={{basic.username}}>
             </form>
@@ -18,7 +21,7 @@
             $(".msg-person").click(function() {
                 var person = userForm.elements["uname"].value;
                 var url = "{{url_for('sendMsgAjax')}}";
-                var message = prompt("Please write a thank you note to " + person + "!");
+                var message = prompt("Send a message to " + person + "!");
                 if (message === "") { // Make sure a respone was written 
                     alert("Please input a message before sending!")
                 }

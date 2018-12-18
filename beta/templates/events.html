@@ -61,13 +61,13 @@
                                                                          border: 1px solid rgba(0, 0, 0, 0.8);
                                                                          text-align:left">
                 <div id="cover-photo">
-                    <img src="/static/event.png" style="max-width:100%">
+                    <img src="{{url_for('static', filename = 'event.png') }}" style="max-width:100%">
                 </div>
                 <div class="info">
                     <div class="name">{{event.ename}}</div>
                     <div class="desc">{{event.description}}</div>
-                    <div class="date"><img src="/static/calendar.png" style="max-width:15%"> {{event.edate}}</div>
-                    <div class="location"><img src="/static/location.png" style="max-width:15%"> {{event.city}}, {{event.state}} {{event.country}}</div>
+                    <div class="date"><img src="{{url_for('static', filename = 'calendar.png') }}" style="max-width:15%"> {{event.edate}}</div>
+                    <div class="location"><img src="{{url_for('static', filename = 'location.png') }} style="max-width:15%"> {{event.city}}, {{event.state}} {{event.country}}</div>
                     <div class="rsvp">RSVPs: {{event.rsvps}}</div>
                     <div class="more">
                         <form method="post" action="/moreEvent/">

@@ -42,7 +42,13 @@ def getYear(curs, uname):
     """Return the classyear of given user"""
     curs.execute('''select classyear from user where username=%s''', (uname, ))
     return curs.fetchone()
-    
+
+def getPic(curs, uname):
+    """ Return the picture of given user """
+    curs. execute('''select filename from picfile where pic=%s''', (uname,))
+    return curs.fetchone()
+
+
 def getOverlap(curs, uname1, uname2):
     """Return 1 if there is an overlap in time at Wellesley, 0 if not"""
     olap = 1

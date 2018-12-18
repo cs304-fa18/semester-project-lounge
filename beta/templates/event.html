@@ -15,7 +15,7 @@
 
 <div id = "event" align="center" style="margin: 0 auto; background-color: white; height: 250px; width: 20%;">
     <div id="cover-photo">
-        <img src="/static/event.png" style="max-width:100%;">
+        <img src="{{url_for('static', filename = 'event.png') }}" style="max-width:100%;">
     </div>
     <div class="name">{{event.ename}}</div>
     <div class="date"><img src="/static/calendar.png" style="max-width:8%"> {{event.edate}}</div>
@@ -74,13 +74,14 @@
     
     var URL_1 = "{{url_for('rsvpEventAjax')}}"; // set URL for Ajax updating
 
+    // hide rsvp button so no one may rsvp to the same event more than once
     function updateRSVP(obj) {
         console.log(obj.rsvp)
         $(".rsvp .num").text(obj.rsvp); 
         $(".rsvpajax").hide()
     }
     
-    // define action on clicking a rating
+    // define action on clicking rsvp
     $("#event").on("click",".rsvpajax",function(event) {
         if (!progressive_on) { // do not act if progressive enhancement is off
             return
@@ -95,7 +96,8 @@
     
     
     var URL = "{{url_for('findRSVPsAjax')}}"; // set URL for Ajax updating
-
+    
+    // append all rsvps to appropriate list
     function listRSVP(obj) {
         $(".people ul").empty()
         rsvps = obj.rsvps
@@ -108,7 +110,7 @@
         }
     }
     
-    // define action on clicking a rating
+    // update rsvps upon clicking see all
     $("#event").on('click', ".rsvp :input", function() {
         var name = $('.name');
         var date = $('.date');

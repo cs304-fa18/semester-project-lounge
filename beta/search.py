@@ -1,4 +1,3 @@
-# Riann Tang
 import sys
 import MySQLdb
 

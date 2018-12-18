@@ -1,5 +1,6 @@
 use lounge_db;
 
+drop table if exists picfile;
 drop table if exists family;
 drop table if exists donation;
 drop table if exists feedback;
@@ -129,5 +130,13 @@ create table family(
     primary key(name, member),
     foreign key (member) references user(username)
     on delete restrict on update cascade
+    )
+    ENGINE = InnoDB;
+    
+create table picfile (
+    pic varchar(20) primary key,
+    filename varchar(50),
+    foreign key (pic) references user(username) 
+    on delete cascade on update cascade
     )
     ENGINE = InnoDB;

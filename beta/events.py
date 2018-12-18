@@ -29,6 +29,7 @@ def checkEvent(curs, name, date):
     return row['count'] > 0
     
 def checkRSVP(curs, uname, name, date):
+    '''returns true if given user has rsvpd to given event'''
     curs.execute('''select count(*) as count from rsvps where uname=%s and ename = %s and edate = %s''', (uname, name, date,))
     row = curs.fetchone()
     return row['count'] > 0

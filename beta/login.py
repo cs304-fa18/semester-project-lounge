@@ -31,3 +31,7 @@ def insertTeam(curs, username, team, ttype, ncity, state, country):
                            values (%s, %s, %s, %s, %s, %s) on duplicate key update
                            tname=%s, `type`=%s, nearestcity=%s, state=%s, country=%s''', 
                            [username, team, ttype, ncity, state, country, team, ttype, ncity, state, country,])
+                    
+def insertPic(curs, username, filename):
+    '''Insert user and their picture into picfile table'''
+    curs.execute('''insert into picfile(pic, filename) values (%s, %s)''', [username, filename,])

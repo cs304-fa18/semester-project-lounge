@@ -6,6 +6,7 @@ import MySQLdb
 # ================================================================
 
 def getFamily(curs, names_dict):
+    '''returns all given family names and members with their given name'''
     names = [name['name'] for name in names_dict]
     wildcard = tuple(names)
     curs.execute('''select family.name, user.name as uname, user.classyear from family 
@@ -15,8 +16,8 @@ def getFamily(curs, names_dict):
     return curs.fetchall()
     
 
-# need to inner join to search user name instead of username
 def findFamily(curs, searchterm):
+    '''returns all families with a member that matches the searchterm'''
     key = '%' + searchterm + '%' # format the wildcard for sql search
     curs.execute('''select family.name, user.name from family inner join user on 
                     family.predecessor = user.username 
