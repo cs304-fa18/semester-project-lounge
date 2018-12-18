@@ -9,3 +9,4 @@ insert into location(pid,city,nearestcity,state,country) values ("ltso","NYC","N
 insert into feedback(subject,message,edate,pid) values ("practice","good","2018-11-09","rtang"), ("tourney","good","2018-11-09","ltso"), ("party","good","2018-11-09","tdeshong");
 insert into donation(pid,item,description) values ("rtang","cleats","adidas size 7"), ("ltso","uniform","2014"), ("tdeshong","money","so much money");
 insert into family(name,predecessor,member) values ("dynasty","rtang","ltso"), ("herd","tdeshong","ltso");
+insert into picfile(pic,filename) values ('tdeshong','default.jpg'), ('rtang','default.jpg'), ('ltso','default.jpg')

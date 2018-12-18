@@ -20,7 +20,6 @@ lock = Lock()
 def index():
     '''return template with appropriate login display'''
     if session.get('uid') == None or session.get('uid') == '':
-        print('hey im here')
         return render_template('notLI.html')
     else:
         return render_template('LI.html')
@@ -637,6 +636,7 @@ def pic(name):
     numrows = curs.execute('select filename from picfile where pic=%s ', [name])
     row = curs.fetchone()
     val = send_from_directory(app.config['UPLOADS'],row['filename'])
+    print(val)
     return val
 
 if __name__ == '__main__':
