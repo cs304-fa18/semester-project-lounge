@@ -20,11 +20,10 @@ lock = Lock()
 def index():
     '''return template with appropriate login display'''
     if session.get('uid') == None or session.get('uid') == '':
-        return render_template('index.html', logout='yes')
+        print('hey im here')
+        return render_template('notLI.html')
     else:
-        print(session.get('uid'))
-        uid = session.get('uid')
-        return render_template('index.html', uid=uid)
+        return render_template('LI.html')
 
 @app.route('/admin/')
 def adminBoard():
@@ -104,7 +103,7 @@ def loginuser():
             session['uid'] = username
             session['logged_in'] = True
             session['utype'] = utype
-            return redirect(url_for('index'))
+            return redirect(url_for('completeProfile'))
         else:
             flash('login incorrect. Try again or join')
             return redirect(url_for('index'))
@@ -127,21 +126,21 @@ def logout():
             return redirect(url_for('index'))
     except Exception as err:
         flash('some kind of error '+str(err))
-        return redirect( url_for('index') )
+        return redirect( url_for('index'))
 
 @app.route('/completeProfile/', methods=['GET', 'POST'])
 def completeProfile():
     '''return template to complete a user's profile'''
     if session.get('uid') == None:
         flash("Need to log in")
-        return render_template('index.html')
+        return redirect( url_for('index'))
     else:
         curs = conn.getConn()
         uid = session.get('uid')
         basic = profiles.getBasicInfo(curs, uid)
         contact = profiles.getContactInfo(curs, uid)
         industry = profiles.getIndustry(curs, uid)
-        family = profiles.getFamily(curs, uid)
+        # family = family.getFamily(curs, uid)
         team = profiles.getTeam(curs, uid)
         picture = profiles.getPic(curs,uid)
         return render_template('moreinfo.html', b=basic, c=contact, i=industry, f=family, t=team, p=picture)
@@ -151,7 +150,7 @@ def updateProfile():
     '''update profile for filled in items and picture'''
     if session.get('uid') == None:
         flash("Need to log in")
-        return render_template('index.html')
+        return redirect( url_for('index'))
     else:
         uname = session.get('uid')
         name = request.form.get("name")
@@ -201,7 +200,7 @@ def updateProfile():
             login.insertTeam(curs, uname, team, ttype, ncity, state, country)
             flash('Updated profile!')
             flash('Upload successful')
-            return redirect(url_for('index'))
+            return redirect(url_for('getProfile', username=uname))
         else:
             return redirect(request.referrer)
 
@@ -370,6 +369,7 @@ def messaging():
         allMsgs = messages.getMessageHistory(curs, uid) # Get people user has messaged/received messages from
         allK = list(allMsgs.keys())
         mPreview = [messages.getLastM(curs,uid, allK[i]) for i in range(0,len(allK))]
+        print mPreview
         num = [i for i in range(0,len(allMsgs))]
         return render_template('messages.html', num=num, msgs=allMsgs, mKeys=allK, mPrev=mPreview)
 
@@ -417,7 +417,7 @@ def submitDonation():
     """Submits donation by inserting the data into the donation table"""
     if session.get('uid') == None:
         flash("Need to log in")
-        return render_template('index.html')
+        return redirect( url_for('index'))
     else:
         error = False
         uname = request.form.get('username')
@@ -536,18 +536,14 @@ def getFamily(searchterm):
     '''return all or selected family trees'''
     if session.get('uid') == None:# Not logged in yet
         flash("Need to log in")
-        return redirect(url_for('index')) 
+        return redirect(url_for('index'))
     else:
         curs = conn.getConn()
-        names_dict = family.findFamily(curs, searchterm)
-        if len(names_dict) == 0:
-            flash('No names match this search')
-            return redirect(request.referrer) 
-        else:
-            families = family.getFamily(curs, names_dict)
-            names_all = [fam['name'] for fam in families]
-            names = list(set(names_all))
-            return render_template('family.html', families=families, names=names)
+        families = family.getFamily(curs, searchterm)
+        names_all = [fam['name'] for fam in families]
+        names = list(set(names_all))
+        return render_template('family.html', families=families, names=names)
+
         
 @app.route('/profile/<username>/', methods=['GET'])
 def getProfile(username):
@@ -556,12 +552,11 @@ def getProfile(username):
     if currentU == None:
         flash("Need to log in")
         return redirect(url_for('index'))
-        
+    
+    if currentU == username: # Check if viewing own profile
+        isSelf = 1;
+            
     curs = conn.getConn()
-
-    # check = profiles.checkPerson(curs, username)
-    # if len(check) == 0:
-    #     return render_template('search.html', dne=1)
 
     #Get all the user's info
     basic = profiles.getBasicInfo(curs, username)
@@ -570,32 +565,38 @@ def getProfile(username):
     contact = profiles.getContactInfo(curs, username)
     pic = profiles.getPic(curs, username)
     
-    #Check user's security preferences and whether person viewing profiles matches prefs
-    prefs = profiles.getSecurityPrefs(curs, username)['sprefs']
-
-    if session.get('utype') == 'admin': #Admins can always view all info
-        permiss =1 
-    elif prefs == "all":
-        permiss = 1
-    elif prefs == "class":
-        if profiles.getYear(curs, username) == profiles.getYear(curs, currentU):
-            print "same class"
-            permiss = 1
-    elif prefs == "overlap":
-        if profiles.getOverlap(curs, username, currentU) == 1:
-            permiss = 1
-    
-    try: # Determine how much to show on html page
-        permiss
+    try: # If viewing own profile
+        isSelf
+        permiss=1
         return render_template('profile.html', basic=basic, industry=industry, team=team, 
-                                contact=contact, permiss=permiss, 
+                                contact=contact, permiss=permiss, isSelf=isSelf,
                                 pic = url_for('pic',name=username))
     except NameError:
-        npermiss = 1
-        return render_template('profile.html', basic=basic, industry=industry, team=team, 
-                                contact=contact, npermiss=npermiss)
+        #Check user's security preferences and whether person viewing profiles matches prefs
+        prefs = profiles.getSecurityPrefs(curs, username)['sprefs']
+    
+        if session.get('utype') == 'admin': #Admins can always view all info
+            permiss = 1 
+        elif prefs == "all":
+            permiss = 1
+        elif prefs == "class":
+            if profiles.getYear(curs, username) == profiles.getYear(curs, currentU):
+                permiss = 1
+        elif prefs == "overlap":
+            if profiles.getOverlap(curs, username, currentU) == 1:
+                permiss = 1
+        
+        try: # Determine how much to show on html page
+            permiss
+            return render_template('profile.html', basic=basic, industry=industry, team=team, 
+                                        contact=contact, permiss=permiss, pic = url_for('pic',name=username))
+        except NameError:
+            npermiss = 1
+            return render_template('profile.html', basic=basic, industry=industry, team=team, 
+                                        contact=contact, npermiss=npermiss)
 
-@app.route("/search", methods=["GET", "POST"])
+        
+@app.route("/search/", methods=["GET", "POST"])
 def searchPerson():
     if session.get('uid') == None:# Not logged in yet
         flash("Need to log in")
@@ -631,21 +632,9 @@ def searchPerson():
 def pic(name):
     curs = conn.getConn()
     numrows = curs.execute('select filename from picfile where pic=%s ', [name])
-    
-    # if numrows == 0:
-    #     flash('No picture for {}'.format(name))
-    #     return redirect(url_for('index'))
     row = curs.fetchone()
     val = send_from_directory(app.config['UPLOADS'],row['filename'])
     return val
-
-
-
-
-
-
-
-
 
 if __name__ == '__main__':
     app.debug = True

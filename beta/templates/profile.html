@@ -15,8 +15,15 @@
                 <input type="hidden" name="uname" value={{basic.username}}>
             </form>
             <button type="button" class="msg-person">Message {{basic.nickname}}</button>
+            <div id="complete">
+            {% if isSelf %}
+            <form method="post" action="{{url_for('completeProfile')}}"> 
+                <input type="submit" id="submit" name="submit" value="Update Profile">
+            </form>
+            </p>
+            {% endif %}
         </div>
-        
+        </div>
         <script>
             $(".msg-person").click(function() {
                 var person = userForm.elements["uname"].value;
@@ -56,15 +63,15 @@
             {% if npermiss %}
                 <div id="industry">
                     <h2>Industry</h2>
-                    <p>Login to view this info</p>
+                    <p>This info hidden</p>
                 </div>
                 <div id="team">
                     <h2>Team</h2>
-                    <p>Login to view this info</p>
+                    <p>This info hidden</p>
                 </div>
                 <div id="contact">
                     <h2>Contact Info</h2>
-                    <p>Login to view this info</p>
+                    <p>This info hidden</p>
                 </div>
             {% endif %}
         </div>
