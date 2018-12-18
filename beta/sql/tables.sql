@@ -1,4 +1,4 @@
-use c9;
+use lounge_db;
 
 drop table if exists picfile;
 drop table if exists family;

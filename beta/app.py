@@ -140,10 +140,11 @@ def completeProfile():
         basic = profiles.getBasicInfo(curs, uid)
         contact = profiles.getContactInfo(curs, uid)
         industry = profiles.getIndustry(curs, uid)
-        # family = family.getFamily(curs, uid)
+        fam = family.getUserFamily(curs, uid)
         team = profiles.getTeam(curs, uid)
+        print('*****' + str(team))
         picture = profiles.getPic(curs,uid)
-        return render_template('moreinfo.html', b=basic, c=contact, i=industry, f=family, t=team, p=picture)
+        return render_template('moreinfo.html', b=basic, c=contact, i=industry, f=fam, t=team, p=picture)
 
 @app.route('/updateProfile/', methods=['POST'])
 def updateProfile():
@@ -369,7 +370,6 @@ def messaging():
         allMsgs = messages.getMessageHistory(curs, uid) # Get people user has messaged/received messages from
         allK = list(allMsgs.keys())
         mPreview = [messages.getLastM(curs,uid, allK[i]) for i in range(0,len(allK))]
-        print mPreview
         num = [i for i in range(0,len(allMsgs))]
         return render_template('messages.html', num=num, msgs=allMsgs, mKeys=allK, mPrev=mPreview)
 
@@ -533,16 +533,20 @@ def redirect_url():
 @app.route('/family/', defaults={'searchterm':''}) # defaults to showing all families
 @app.route('/family/<searchterm>/', methods=['GET'])
 def getFamily(searchterm):
-    '''return all or selected family trees'''
     if session.get('uid') == None:# Not logged in yet
         flash("Need to log in")
-        return redirect(url_for('index'))
+        return redirect(url_for('index')) 
     else:
         curs = conn.getConn()
-        families = family.getFamily(curs, searchterm)
-        names_all = [fam['name'] for fam in families]
-        names = list(set(names_all))
-        return render_template('family.html', families=families, names=names)
+        names_dict = family.findFamily(curs, searchterm)
+        if len(names_dict) == 0:
+            flash('No names match this search')
+            return redirect(request.referrer) 
+        else:
+            families = family.getFamily(curs, names_dict)
+            names_all = [fam['name'] for fam in families]
+            names = list(set(names_all))
+            return render_template('family.html', families=families, names=names)
 
         
 @app.route('/profile/<username>/', methods=['GET'])
@@ -593,7 +597,7 @@ def getProfile(username):
         except NameError:
             npermiss = 1
             return render_template('profile.html', basic=basic, industry=industry, team=team, 
-                                        contact=contact, npermiss=npermiss)
+                                        contact=contact, npermiss=npermiss, pic = url_for('pic',name=username))
 
         
 @app.route("/search/", methods=["GET", "POST"])

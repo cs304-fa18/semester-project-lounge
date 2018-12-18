@@ -4,6 +4,13 @@ import sys
 import MySQLdb
 
 # ================================================================
+def getUserFamily(curs, uid):
+    '''returns family name a given person is a part of'''
+    curs.execute('''select family.name, user.name as pred from family 
+                    inner join user on family.predecessor = user.username where 
+                    family.member = %s''', (uid,))
+    return curs.fetchone()
+
 
 def getFamily(curs, names_dict):
     '''returns all given family names and members with their given name'''

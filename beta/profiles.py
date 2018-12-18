@@ -24,8 +24,8 @@ def getIndustry(curs, uname):
      return curs.fetchone()
      
 def getTeam(curs, uname):
-    """Return the team name, type, city, state and country of given user"""
-    curs.execute('''select tname, nearestcity, state, country from team where pid=%s''', (uname, ))
+    """Return the team name, `type`, city, state and country of given user"""
+    curs.execute('''select tname, `type`, nearestcity, state, country from team where pid=%s''', (uname, ))
     return curs.fetchone()
     
 def getContactInfo(curs, uname):

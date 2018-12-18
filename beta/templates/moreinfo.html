@@ -2,59 +2,71 @@
 
 {% extends "index.html" %}
 {% block content %}
-<body>
+<body>            
+
     <form method="post" action="{{url_for('updateProfile')}}" enctype = "multipart/form-data"> 
     <div id="personal">
     <fieldset>
         <legend>Personal Information</legend>
         <table>
             <tr><td><label for="name"> Name:</label></td><td><input type="text" name="name" id="name" value="{{b.name}}"></td></tr>
-            <tr><td><label for="nickname"> Nickname:</label></td><td><input type="text" name="nickname" id="nickname" value={{b.nickname}}></td></tr>
             <tr><td><label for="pic">Pic: <input type="file" name="pic" accept="image/*"></label></td></tr>
-            
+            <tr><td><label for="nickname"> Nickname:</label></td><td><input type="text" name="nickname" id="nickname" value={{b.nickname}}></td></tr>
             <tr><td><label for="phnum"> Phone number:</label></td><td><input type="text" name="phnum" id="phnum" value={{c.phnum}}></td></tr>
             <tr><td><label for="year"> Class year:</label></td><td><input type="text" name="year" id="year" value={{b.classyear}}></td></tr>
         </table>
     </fieldset>
+    </div>
     <br>
+    <div id="industry">
     <fieldset>
         <legend>Industry Information</legend>
         <table>
             <tr><td><label for="industry"> Industry:<br>
-                <input type="radio" name="ind" value="GandL"> Government and Law<br>
-                <input type="radio" name="ind" value="TandE"> Technology and Engineering<br>
-                <input type="radio" name="ind" value="CandF"> Consulting and Finance<br>
-                <input type="radio" name="ind" value="PandLS"> Physical and Life Sciences<br>
-                <input type="radio" name="ind" value="EandN"> Education and Nonprofit<br>
-                <input type="radio" name="ind" value="HP"> Health Professions<br>
+                <input type="radio" name="ind" value="Government and Law"> Government and Law<br>
+                <input type="radio" name="ind" value="Technology and Engineering"> Technology and Engineering<br>
+                <input type="radio" name="ind" value="Consulting and Finance"> Consulting and Finance<br>
+                <input type="radio" name="ind" value="Physical and Life Sciences"> Physical and Life Sciences<br>
+                <input type="radio" name="ind" value="Education and Nonprofit"> Education and Nonprofit<br>
+                <input type="radio" name="ind" value="Health Professions"> Health Professions<br>
             </td></tr>
         </table>
     </fieldset>
+    </div>
     <br>
+    <div id="family">
     <fieldset>
         <legend>Family Information</legend>
         <table>    
-            <tr><td><label for="fname"> Family name:</label></td><td><input type="text" name="fname" id="fname"></td></tr>
-            <tr><td><label for="ancestor"> Ancestor:</label></td><td><input type="text" name="ancestor" id="ancestor"></td></tr>
+            <tr><td><label for="fname"> Family name:</label></td><td><input type="text" name="fname" id="fname" value="{{f.name}}"></td></tr>
+            <tr><td><label for="predecessor"> Ancestor:</label></td><td><input type="text" name="predecessor" id="predecessor" value="{{f.pred}}"></td></tr>
         </table>
     </fieldset>
+    </div>
     <br>
+    <div id="team">
     <fieldset>
         <legend>Team Information</legend>
         <table>    
-            <tr><td><label for="team"> Team:</label></td><td><input type="text" name="team" id="team"></td></tr>
+            <tr><td><label for="team"> Team:</label></td><td><input type="text" name="team" id="team" value="{{t.tname}}"></td></tr>
             <tr><td><label for="ttype"> Team type:<br>
-                <input type="radio" name="t" value="club"> Club<br>
-                <input type="radio" name="t" value="league"> League<br>
-                <input type="radio" name="t" value="college"> College<br>
+                <input type="radio" name="t" value="Club"> Club<br>
+                <input type="radio" name="t" value="League"> League<br>
+                <input type="radio" name="t" value="College"> College<br>
             </td></tr>
-            <tr><td><label for="tcity"> Nearest city:</label></td><td><input type="text" name="tcity" id="tcity"></td></tr>
-            <tr><td><label for="tstate"> State:</label></td><td><input type="text" name="tstate" id="tstate"></td></tr>
-            <tr><td><label for="tcountry"> Country:</label></td><td><input type="text" name="tcountry" id="tcountry"></td></tr>
+            <tr><td><label for="tcity"> Nearest city:</label></td><td><input type="text" name="tcity" id="tcity" value="{{t.nearestcity}}"></td></tr>
+            <tr><td><label for="tstate"> State:</label></td><td><input type="text" name="tstate" id="tstate" value="{{t.state}}"></td></tr>
+            <tr><td><label for="tcountry"> Country:</label></td><td><input type="text" name="tcountry" id="tcountry" value="{{t.country}}"></td></tr>
         </table>
     </fieldset>
+    </div>
         <input type="submit" id="submit" name="submit" value="Update Profile">
     </form>
 </body>
+
+<script>
+    $('#industry input[value="{{i.iname}}"]').attr('checked', true);
+    $('#team input[value="{{t.type}}"]').attr('checked', true);
+</script>
 
 {% endblock %}
